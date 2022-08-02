@@ -43,7 +43,7 @@ void MX_LIBJPEG_Init(void);
 
 /* USER CODE BEGIN 2 */
 void StoreImageBuffer(uint8_t* buffer);
-void Decode_JPG(uint8_t *filename);
+int ProcessJPG(uint8_t *filename);
 /* USER CODE END 2 */
 
 #ifdef __cplusplus

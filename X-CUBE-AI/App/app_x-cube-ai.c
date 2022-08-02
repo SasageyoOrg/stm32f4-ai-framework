@@ -91,9 +91,6 @@
 const unsigned long int bufferBytes = IMGBUFFERSIZE;
 // look-up table preproc
 uint8_t pixel_conv_lut[256];
-// address spaces used as buffers for the neural network
-uint8_t* image_input_buffer = (uint8_t*)0xD0600000;
-uint8_t* image_preproc_buffer = (uint8_t*)0xD0700000;
 // neural network classes
 const char* output_labels[AI_NETWORK_OUT_1_SIZE] = AI_CLASSES;
 // ranking array for the neural network classes
@@ -349,35 +346,27 @@ static void Precompute_8IntS(uint8_t *lut, float scale, int32_t zp, float scale_
 	}
 }
 
+
 /**
  * @brief  Performs pixel R & B swapping
  */
 void PREPROC_Pixel_RB_Swap(void *pSrc, void *pDst, uint32_t pixels)
 {
-	struct rgb_Src
-	{
-		uint8_t r, g, b;
-	};
-
-	struct rgb_Dst
-	{
-		uint8_t r, g, b;
-	};
-
 	uint8_t tmp_r;
 
-	struct rgb_Src *pivot = (struct rgb_Src *) pSrc;
-	struct rgb_Dst *dest = (struct rgb_Dst *) pDst;
+	RGB_typedef *pivot = (RGB_typedef *) pSrc;
+	RGB_typedef *dest = (RGB_typedef *) pDst;
 
 	for (int i = pixels-1; i >= 0; i--)
 	{
-		tmp_r=pivot[i].r;
+		tmp_r=pivot[i].R;
 
-		dest[i].r = pivot[i].b;
-		dest[i].b = tmp_r;
-		dest[i].g = pivot[i].g;
+		dest[i].R = pivot[i].B;
+		dest[i].B = tmp_r;
+		dest[i].G = pivot[i].G;
 	}
 }
+
 
 /**
  * @brief Copies the source image pixels to the destination image buffer. The two buffers must have the same size.
@@ -395,6 +384,7 @@ static void STM32Ipl_SimpleCopy(const uint8_t *src, uint8_t *dst, uint32_t size,
 			*dst++ = *src++;
 	}
 }
+
 
 static void Compute_pix_conv_tab() {
 	uint8_t *lut = pixel_conv_lut;
@@ -424,14 +414,19 @@ static void Compute_pix_conv_tab() {
 	}
 }
 
+
 /**
  * @brief get the destination buffer with R & B channel swapped and convert the bpp of the destination image if needed
  */
-void Image_Buffer_Pre_Processing(uint8_t *bSrc, uint8_t *bDst)
+void InputBuffer_PreProcessing(uint8_t *bSrc, uint8_t *bDst)
 {
-	// 0. TODO: forse l'immagine bDst è da convertire in IMAGE_BPP_RGB565 [implica modifiche in 1.2 STM32Ipl_ConvertRev()]
+	/*
+	 * maybe we need to convert bDst in IMAGE_BPP_RGB565 (or other)
+	 * it involves changes in 1.2 STM32Ipl_ConvertRev()
+	 * at the moment this function is unused
+	 */
 	// 1. PREPROC_PixelFormatConversion()
-	uint32_t nb_pixels = IMAGESIZE;
+	uint32_t nb_pixels = IMAGE_WIDTH * IMAGE_HEIGHT;
 	int rb_swap = 0;
 
 	// only if -> rb_swap = 1
@@ -459,6 +454,7 @@ void Image_Buffer_Pre_Processing(uint8_t *bSrc, uint8_t *bDst)
 	}
 }
 
+
 /**
  * @brief Performs pixel conversion from 8-bits integer to 8-bits quantized format expected by NN input with normalization
  */
@@ -483,6 +479,7 @@ void AI_PixelValueConversion_QuantizedNN(uint8_t *pSrc)
 		}
 	}
 }
+
 
 /**
  * @brief Performs the dequantization of a quantized NN output
@@ -562,35 +559,40 @@ void ai_process_requirements(void) {
 	// copy the array content [resize_image_buffr] onto the image buffer [image_input_buffer]
 	// image_input_buffer = (uint8_t*)malloc(sizeof(uint8_t) * bufferBytes);
 	// image_input_buffer = (uint8_t*)calloc(bufferBytes, sizeof(uint8_t));
-	for(uint32_t i = 0; i < bufferBytes; i++)
-	{
-		*((uint8_t *)(image_input_buffer + i)) = image_buffer[i];
-	}
+	//	for(uint32_t i = 0; i < bufferBytes; i++)
+	//	{
+	//		*((uint8_t *)(image_input_buffer + i)) = image_buffer[i];
+	//	}
 }
 
+
 void ai_process_preproc() {
-	#if VERBOSE_LEVEL == 2
-		printf("[%s:%d] preprocessing pt.1 - swap R&B channels and convert the bpp if needed \r\n", __FILE__, __LINE__);
-	#elif VERBOSE_LEVEL == 1
-		printf("ai preprocessing pt.1 \r\n");
-	#endif
+	//	#if VERBOSE_LEVEL == 2
+	//		printf("[%s:%d] preprocessing pt.1 - swap R&B channels and convert the bpp if needed \r\n", __FILE__, __LINE__);
+	//	#elif VERBOSE_LEVEL == 1
+	//		printf("ai preprocessing pt.1 \r\n");
+	//	#endif
 
 	// pre-process the input buffer and copy in onto a new one
 	// image_preproc_buffer = (uint8_t*)malloc(sizeof(uint8_t) * bufferBytes);
-	Image_Buffer_Pre_Processing(image_input_buffer, image_preproc_buffer);
+	// Image_Buffer_Pre_Processing(image_input_buffer, image_preproc_buffer);
+	// Image_Buffer_Pre_Processing((uint8_t *)image_buffer, image_preproc_buffer);
 
 	#if VERBOSE_LEVEL == 2
-		printf("[%s:%d] preprocessing pt.2 - pixel value conversion for quantized neural network\r\n", __FILE__, __LINE__);
+		printf("[%s:%d] preprocessing pt.2 - PVC for quantized neural network\r\n", __FILE__, __LINE__);
 	#elif VERBOSE_LEVEL == 1
 		printf("ai preprocessing pt.2 \r\n");
 	#endif
 
 	// quantized neural network
 	if(ai_get_input_format() == AI_BUFFER_FMT_TYPE_Q) {
-		AI_PixelValueConversion_QuantizedNN(image_preproc_buffer);
 		// AI_PixelValueConversion_QuantizedNN(image_input_buffer);
+		// AI_PixelValueConversion_QuantizedNN(image_preproc_buffer);
+		// AI_PixelValueConversion_QuantizedNN((uint8_t *)image_buffer);
+		AI_PixelValueConversion_QuantizedNN((uint8_t *)image_buffer_resized);
 	}
 }
+
 
 void ai_process_inference(void) {
 	int res;
@@ -614,6 +616,7 @@ void ai_process_inference(void) {
 	nn_inference_time = ((tinf_stop>tinf_start)?(tinf_stop-tinf_start):((1<<24)-tinf_start+tinf_stop));
 }
 
+
 void ai_process_postproc(void) {
 	// NN ouput dequantization if required
 	#if VERBOSE_LEVEL == 2
@@ -631,9 +634,13 @@ void ai_process_postproc(void) {
 		printf("ai postprocessing pt.2 \r\n");
 	#endif
 
+	// setup the ranking array for the ai classes
 	for (int i = 0; i < AI_NETWORK_OUT_1_SIZE; i++) ranking[i] = i;
+
+	// sorts the inference output into the ranking array
 	UTILS_Bubblesort((float*)(data_out_1), ranking, AI_NETWORK_OUT_1_SIZE);
 }
+
 
 void ai_process_display(void) {
 	// BSP_LCD_DisplayStringAtLine() displays a maximum of 60 characters on the LCD
@@ -682,22 +689,6 @@ void ai_process_display(void) {
 	#endif
 }
 
-void ai_process_clean(void) {
-	// check memory layout
-	// uint32_t src_size = 224 * 224 * 3;
-	// uint32_t src_start = (uint32_t)image_input_buffer;
-	// uint32_t dst_start = (uint32_t)image_preproc_buffer;
-	// uint32_t src_end = src_start + src_size - 1;
-	// uint32_t dst_end = dst_start + src_size - 1;
-
-	// printf("[app_x-cube-ai.c] image_input_buffer memory : %lu - %lu\r\n", src_start, src_end);
-	// printf("[app_x-cube-ai.c] image_preproc_buffer memory : %lu - %lu\r\n", dst_start, dst_end);
-
-	// free dynamically allocated memory
-	// free(image_input_buffer);
-	// free(image_preproc_buffer);
-}
-
 /* USER CODE END 2 */
 
 /* Entry points --------------------------------------------------------------*/
@@ -739,7 +730,7 @@ void MX_X_CUBE_AI_Process(void)
     /* USER CODE BEGIN 6 */
 
 	/* ------------------- REQUIREMENTS -------------------- */
-	ai_process_requirements();
+	// ai_process_requirements();
 
 	/* ------------------ PRE-PROCESSING ------------------- */
 	ai_process_preproc();
@@ -750,11 +741,8 @@ void MX_X_CUBE_AI_Process(void)
 	/* ------------------ POST-PROCESSING ------------------ */
 	ai_process_postproc();
 
-	/* ----------------- AI OUTPUT DISPLAY ----------------- */
+	/* ----------------- INFERENCE RESULTS ----------------- */
 	ai_process_display();
-
-	/* ----------------- CLEAN OPERATIONS ------------------ */
-	// ai_process_clean();
 
     /* USER CODE END 6 */
 }

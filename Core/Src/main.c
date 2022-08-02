@@ -67,9 +67,9 @@ SDRAM_HandleTypeDef hsdram1;
  * Variables declared in "utils.h" are defined here
  * source: https://stackoverflow.com/q/1433204
  */
-__attribute__((section(".ccmram"))) uint8_t _aucLine[AUCSIZE];
-__attribute__((section(".extram"))) uint8_t image_buffer[IMGBUFFERSIZE];
-// __attribute__((section(".extram"))) uint32_t ARGB32Buffer[IMAGESIZE];
+uint8_t *scanline_buffer;
+uint8_t *image_buffer;
+__attribute__((section(".extram"))) uint8_t image_buffer_resized[IMGBUFFERSIZE];
 
 // counter increased every time an image is decoded and processed
 int imgs_processed = 0;
@@ -90,7 +90,7 @@ void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
 static void LCD_Config(void);
-//static uint8_t Display_JPG(uint32_t DataLength);
+void DMA2D_BufferImage2LCD(uint32_t data, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 void Scan_JPGs(void);
 /* USER CODE END PFP */
 
@@ -148,10 +148,7 @@ int main(void)
 	LCD_Config();
 
 	// now i can write on it
-	// BSP_LCD_DisplayStringAtLine(1,(uint8_t*)"STM32 AI Capability");
-	// BSP_LCD_DisplayStringAtLine(2,(uint8_t*)"SOD@UNIVPM 2022");
-
-	BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t*)"STM32 AI Capability", CENTER_MODE);
+	BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t*)"STM32 AI Framework", CENTER_MODE);
 	BSP_LCD_DisplayStringAt(0, LINE(2), (uint8_t*)"SOD@UNIVPM 2022", CENTER_MODE);
 
 	HAL_Delay(2000);
@@ -605,18 +602,12 @@ static void LCD_Config(void)
 
 	/* Background Layer Initialization */
 	BSP_LCD_LayerDefaultInit(0, LCD_BUFFER);
-	// BSP_LCD_LayerDefaultInit(LCD_BACKGROUND_LAYER,LCD_FRAME_BUFFER);
-	// BSP_LCD_LayerDefaultInit(LCD_FOREGROUND_LAYER,LCD_FRAME_BUFFER);
 
 	/* Set Foreground Layer */
 	BSP_LCD_SelectLayer(0);
-	// BSP_LCD_SelectLayer(LCD_FOREGROUND_LAYER);
 
 	/* Enable the LCD */
 	BSP_LCD_DisplayOn();
-
-	/* Set the layer window */
-	// BSP_LCD_SetLayerWindow(0, 0, 0, IMAGE_WIDTH, IMAGE_HEIGHT);
 
 	/* Clear the LCD Background layer */
 	BSP_LCD_SetTransparency(0,255);
@@ -638,17 +629,6 @@ void DMA2D_BufferImage2LCD(uint32_t data, uint32_t x, uint32_t y, uint32_t width
 	 * it consists of converting the image buffer to a ARGB32Buffer to store the image in 32bit
 	 */
 
-	//DMA2D_HandleTypeDef hdma2_new;
-	//hdma2_new.Instance = DMA2D;
-	//
-	//hdma2_new.Init.Mode = DMA2D_M2M_PFC;
-	//hdma2_new.Init.ColorMode = DMA2D_OUTPUT_ARGB8888;
-	//hdma2_new.Init.OutputOffset = BSP_LCD_GetXSize() - width;
-	//
-	//hdma2_new.LayerCfg[1].AlphaMode = DMA2D_NO_MODIF_ALPHA;
-	//hdma2_new.LayerCfg[1].InputColorMode = DMA2D_INPUT_RGB888;
-	//hdma2_new.LayerCfg[1].InputOffset = 0;
-
 	hdma2d.Init.OutputOffset = BSP_LCD_GetXSize() - width;
 
 	HAL_DMA2D_Init(&hdma2d);
@@ -663,9 +643,10 @@ void Scan_JPGs(void){
 	DIR dir;
 	FILINFO fno;
 	FRESULT res;
+	int status;
 
 	#if VERBOSE_LEVEL == 2
-		printf("[%s:%d] searching images in %s ... \r\n", __FILE__, __LINE__, path_to_dir);
+		printf("[%s:%d] searching images in %s ... \r\n", __FILE__, __LINE__, PATH_TO_JPEGS);
 	#endif
 
 	if (f_chdir(PATH_TO_JPEGS) == FR_OK){
@@ -680,77 +661,37 @@ void Scan_JPGs(void){
 			#elif VERBOSE_LEVEL == 1 || VERBOSE_LEVEL == 0
 				printf("decoding image %s \r\n", fno.fname);
 			#endif
-			// decode the image and print it to the LCD
-			// DecodeJPG((uint8_t*)fno.fname, Display_JPG);
+			// decode, resize and store the image into the dedicated buffer
+			status = ProcessJPG((uint8_t*)fno.fname);
 
-			#if VERBOSE_LEVEL == 2
-				printf("[%s:%d] resize image for neural network \r\n", __FILE__, __LINE__);
-			#endif
+			if(status) {
+				/*
+				 * print the resized image to the LCD using the Chrom-ART accelerator
+				 * which offers hardware acceleration for STM32 graphical operations.
+				 *
+				 * other methods to draw the image buffer into the LCD:
+				 * 1 -> convert the buffer to ARGB8888 format (32bit) in order to avoid the DMA2D_M2M_PFC
+				 * 2 -> get a (uint8_t *) buffer compatible with the input format of the neural network
+				 * 		it can also be done by casting the array (uint8_t *)image_buffer
+				 */
+				DMA2D_BufferImage2LCD(
+					(uint32_t)image_buffer_resized,
+					(BSP_LCD_GetXSize() - IMAGE_WIDTH) / 2,
+					(BSP_LCD_GetXSize() - IMAGE_HEIGHT) / 2,
+					IMAGE_WIDTH,
+					IMAGE_HEIGHT
+				);
 
-			// decode the image and store it the dedicated buffer
-			Decode_JPG((uint8_t*)fno.fname);
+				// AI process
+				MX_X_CUBE_AI_Process();
 
-			/*
-			 * print the image to the LCD using the Chrom-ART accelerator which offers
-			 * hardware acceleration for STM32 graphical operations
-			 */
-			DMA2D_BufferImage2LCD(
-				(uint32_t)image_buffer,
-				(BSP_LCD_GetXSize() - IMAGE_WIDTH) / 2,
-				(BSP_LCD_GetYSize() - IMAGE_HEIGHT) / 2,
-				IMAGE_WIDTH,
-				IMAGE_HEIGHT
-			);
+				// wait 4s to read the neural network results
+				HAL_Delay(4000);
 
-			/*
-			 * other methods to draw the image buffer into the LCD:
-			 * 1 -> convert the buffer to ARGB8888 format (32bit) in order to avoid the DMA2D_M2M_PFC
-			 */
-			//uint32_t counter = 0;
-			//for(counter = 0; counter < IMAGESIZE; counter++)
-			//{
-			//	// red and blue components swapped RGB vs BGR (2->1->0)
-			//	ARGB32Buffer[counter]  = (uint32_t)
-			//	(
-			//		((image_buffer[counter * 3 + 2] << 16) |
-			//		(image_buffer[counter * 3 + 1] << 8) |
-			//		(image_buffer[counter * 3 + 0]) | 0xFF000000)
-			//	);
-			//}
-			//
-			//DMA2D_DrawImage((uint32_t)ARGB32Buffer, [...]);
-
-			/*
-			 * 2 -> get a (uint8_t *) buffer compatible with the input format of the neural network
-			 */
-			//uint8_t* ib = (uint8_t*)0xD0600000;
-			//for(uint32_t i = 0; i < IMGBUFFERSIZE; i++)
-			//{
-			//	*((uint8_t *)(ib + i)) = image_buffer[i];
-			//}
-			//
-			//uint32_t counter = 0;
-			//for(counter = 0; counter < IMAGESIZE; counter++)
-			//{
-			//	// red and blue components swapped RGB vs BGR (2->1->0)
-			//	ARGB32Buffer[counter]  = (uint32_t)
-			//	(
-			//		((*((uint8_t *)(ib + counter * 3 + 2)) << 16) |
-			//		(*((uint8_t *)(ib + counter * 3 + 1)) << 8) |
-			//		(*((uint8_t *)(ib + counter * 3 + 0))) | 0xFF000000)
-			//	);
-			//}
-			//
-			//DMA2D_DrawImage((uint32_t)ARGB32Buffer, [...]);
-
-			// AI process
-			MX_X_CUBE_AI_Process();
-
-			// wait 4s
-			HAL_Delay(4000);
-
-			// clear the last AI results (todo: indices hard-coded)
-			for (int k = 10; k < 17; k++) BSP_LCD_ClearStringLine(k);
+				// clear the last AI results (todo: indices hard-coded)
+				// for (int k = 10; k < 17; k++) BSP_LCD_ClearStringLine(k);
+				BSP_LCD_Clear(LCD_COLOR_BLACK);
+			}
 
 			// search next image is exist
 			res = f_findnext(&dir, &fno);
@@ -759,8 +700,9 @@ void Scan_JPGs(void){
 		f_closedir(&dir);
 
 		BSP_LCD_Clear(LCD_COLOR_BLACK);
-		BSP_LCD_DisplayStringAtLine(1,(uint8_t*)"STM32 AI Capability");
-		BSP_LCD_DisplayStringAtLine(2,(uint8_t*)"Program terminated");
+		BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t*)"STM32 AI Framework", CENTER_MODE);
+		BSP_LCD_DisplayStringAt(0, LINE(2), (uint8_t*)"SOD@UNIVPM 2022", CENTER_MODE);
+		BSP_LCD_DisplayStringAt(0, LINE(4), (uint8_t*)"Program terminated", CENTER_MODE);
 
 		printf("################   END   ################ \r\n");
 	}
