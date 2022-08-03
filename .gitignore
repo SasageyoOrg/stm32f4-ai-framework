@@ -46,8 +46,15 @@
 *.mod*
 *.cmd
 .tmp_versions/
+
 modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
 .DS_Store
+.project
+.mxproject
+.cproject
+
+.ai/*
+.settings/*

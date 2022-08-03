@@ -85,11 +85,11 @@ void *_sbrk(ptrdiff_t incr)
   if (NULL == __sbrk_heap_end)
   {
     //__sbrk_heap_end = &_end;
-	__sbrk_heap_end = (uint8_t *)0xD0600000;
+	__sbrk_heap_end = (uint8_t *)0xD0700000;
   }
 
   /* Protect heap from growing into the reserved MSP stack */
-  if (__sbrk_heap_end + incr > (uint8_t *)0xD0700000)
+  if (__sbrk_heap_end + incr > (uint8_t *)0xD0800000)
   {
     errno = ENOMEM;
     return (void *)-1;
