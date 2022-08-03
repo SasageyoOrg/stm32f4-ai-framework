@@ -88,7 +88,6 @@
 
 /* Variables ---------------------------------------------------------------------------*/
 
-const unsigned long int bufferBytes = IMGBUFFERSIZE;
 // look-up table preproc
 uint8_t pixel_conv_lut[256];
 // neural network classes
@@ -384,29 +383,43 @@ void PREPROC_Pixel_RB_Swap(void *pSrc, void *pDst, uint32_t pixels)
 	}
 }
 
+void PREPROC_Pixel_RB_Swap_InPlace(void *pSrc) {
+	RGB_typedef *pivot = (RGB_typedef *) pSrc;
+	uint8_t tmp_r;
+	uint32_t pixels = IMAGE_WIDTH * IMAGE_HEIGHT;
+
+	for (int i = pixels-1; i >= 0; i--) {
+		tmp_r = pivot[i].R;
+
+		pivot[i].R = pivot[i].B;
+		pivot[i].B = tmp_r;
+	}
+}
+
+
 
 /**
  * @brief Copies the source image pixels to the destination image buffer. The two buffers must have the same size.
  */
-static void STM32Ipl_SimpleCopy(const uint8_t *src, uint8_t *dst, uint32_t size, bool reverse)
-{
-	// param 'reverse' forces the reversed processing (from the last to the first pixel)
-	if (reverse) {
-		src += size;
-		dst += size;
-		for (uint32_t i = 0; i < size; i++)
-			*dst-- = *src--;
-	} else {
-		for (uint32_t i = 0; i < size; i++)
-			*dst++ = *src++;
-	}
-}
+//static void STM32Ipl_SimpleCopy(const uint8_t *src, uint8_t *dst, uint32_t size, bool reverse)
+//{
+//	// param 'reverse' forces the reversed processing (from the last to the first pixel)
+//	if (reverse) {
+//		src += size;
+//		dst += size;
+//		for (uint32_t i = 0; i < size; i++)
+//			*dst-- = *src--;
+//	} else {
+//		for (uint32_t i = 0; i < size; i++)
+//			*dst++ = *src++;
+//	}
+//}
 
 
 /**
  * @brief convert the pixel format and swap the R&B components of the destination buffer if needed
  */
-void PreProces_InputBuffer(uint8_t *bSrc, uint8_t *bDst)
+void AI_RBswap_PixelFormatConversion(uint8_t *bSrc, uint8_t *bDst)
 {
 	/*
 	 * 1° step:	R&B Channel Swap
@@ -420,31 +433,28 @@ void PreProces_InputBuffer(uint8_t *bSrc, uint8_t *bDst)
 
 	// 1. R&B Channel Swap
 	uint32_t nb_pixels = IMAGE_WIDTH * IMAGE_HEIGHT;
-	int rb_swap = 0;	// todo: it need a method to detect if necessary
 
-	if(rb_swap) {
+	if(AI_RB_SWAP) {
 		PREPROC_Pixel_RB_Swap(bSrc, bDst, nb_pixels);
 	}
 
-	// 1.1 Image_CheckResizeMemoryLayout() -> to get the 'reverse' value
-	uint32_t src_size = bufferBytes;
-	uint32_t dst_size = bufferBytes;
-	uint32_t src_start = (uint32_t)bSrc;
-	uint32_t dst_start = (uint32_t)bDst;
-	uint32_t src_end = src_start + src_size - 1;
-	uint32_t dst_end = dst_start + dst_size - 1;
-	bool reverse = false;
-
-	if ((src_end > dst_start) && (dst_end >= src_end))
-	{
-		reverse = true;
-	}
-
-	// 1.2 Pixel Format Conversion -> STM32Ipl_ConvertRev()
-	if (bSrc != bDst) {
-		// at the moment instead of the conversion we only do a simple copy
-		STM32Ipl_SimpleCopy(bSrc, bDst, dst_size, reverse);
-	}
+	//	// 1.1 Image_CheckResizeMemoryLayout() -> to get the 'reverse' value
+	//	uint32_t src_size = IMGBUFFERSIZE;
+	//	uint32_t dst_size = IMGBUFFERSIZE;
+	//	uint32_t src_start = (uint32_t)bSrc;
+	//	uint32_t dst_start = (uint32_t)bDst;
+	//	uint32_t src_end = src_start + src_size - 1;
+	//	uint32_t dst_end = dst_start + dst_size - 1;
+	//	bool reverse = false;
+	//
+	//	if ((src_end > dst_start) && (dst_end >= src_end))
+	//	{
+	//		reverse = true;
+	//	}
+	//
+	//	// 1.2 Pixel Format Conversion -> STM32Ipl_ConvertRev()
+	//	// at the moment instead of the conversion we only do a simple copy
+	//	STM32Ipl_SimpleCopy(bSrc, bDst, dst_size, reverse);
 }
 
 
@@ -583,24 +593,28 @@ void AI_Output_Dequantize(void)
 
 
 void ai_process_preprocess() {
-	//	#if VERBOSE_LEVEL == 2
-	//		printf("[%s:%d] ai pre-processing - PFC and R&B Channels Swap \r\n", __FILE__, __LINE__);
-	//	#elif VERBOSE_LEVEL == 1
-	//		printf("ai pre-processing: PFC and R&B Swap \r\n");
-	//	#endif
+	#if VERBOSE_LEVEL == 2
+		printf("[%s:%d] ai pre-processing - PFC and R&B Channels Swap \r\n", __FILE__, __LINE__);
+	#elif VERBOSE_LEVEL == 1
+		printf("ai pre-processing: PFC and R&B Swap \r\n");
+	#endif
 
 	// pre-process the input buffer and copy it into a new one
-	// uint8_t *image_buffer_preproccesed = (uint8_t*)malloc(sizeof(uint8_t) * bufferBytes);
-	// PreProces_InputBuffer((uint8_t *)image_buffer_resized, image_buffer_preproccesed);
+	// uint8_t *image_buffer_preproc = (uint8_t*)malloc(sizeof(uint8_t) * IMGBUFFERSIZE);
+	// AI_RBswap_PixelFormatConversion((uint8_t *)image_buffer_resized, image_buffer_preproc);
 
-#if VERBOSE_LEVEL == 2
-	printf("[%s:%d] ai pre-processing - Pixel Value Conversion \r\n", __FILE__, __LINE__);
-#elif VERBOSE_LEVEL == 1
-	printf("ai pre-processing: PVC \r\n");
-#endif
+	PREPROC_Pixel_RB_Swap_InPlace((void *)image_buffer_resized);
+
+	#if VERBOSE_LEVEL == 2
+		printf("[%s:%d] ai pre-processing - Pixel Value Conversion \r\n", __FILE__, __LINE__);
+	#elif VERBOSE_LEVEL == 1
+		printf("ai pre-processing: PVC \r\n");
+	#endif
 
 	// Pixel Value Conversion for quantized or float neural networks
 	AI_PixelValueConversion((void *)image_buffer_resized);
+
+	// free(image_buffer_preproc);
 }
 
 
@@ -664,7 +678,7 @@ void ai_process_display(void) {
 	printf("inference results: \r\n");
 #endif
 
-	sprintf(msg, "Inference results:");
+	sprintf(msg, "Inference results");
 	BSP_LCD_DisplayStringAtLine(x++, (uint8_t*)msg);
 
 	for (int i = 0; i < AI_TOP_N_RESULTS; i++)
@@ -672,10 +686,10 @@ void ai_process_display(void) {
 #if VERBOSE_LEVEL == 2
 		printf("[%s:%d] %i) %s -> %.1f%% \r\n", __FILE__, __LINE__, (i+1), output_labels[ranking[i]], *((float*)(data_out_1)+i) * 100);
 #elif VERBOSE_LEVEL == 1 || VERBOSE_LEVEL == 0
-		printf("%i) %s -> %.1f%% \r\n", (i+1), output_labels[ranking[i]], *((float*)(data_out_1)+i) * 100);
+		printf("%i) %s: %.1f%%\r\n", (i+1), output_labels[ranking[i]], *((float*)(data_out_1)+i) * 100);
 #endif
 
-		sprintf(msg, "%i) %s -> %.1f%%", (i+1), output_labels[ranking[i]], *((float*)(data_out_1)+i) * 100);
+		sprintf(msg, "%i) %s: %.1f%%", (i+1), output_labels[ranking[i]], *((float*)(data_out_1)+i) * 100);
 		BSP_LCD_DisplayStringAtLine(x++, (uint8_t*)msg);
 	}
 
@@ -687,7 +701,7 @@ void ai_process_display(void) {
 
 	x++;
 
-	sprintf(msg, "Inference time:");
+	sprintf(msg, "Inference time");
 	BSP_LCD_DisplayStringAtLine(x++, (uint8_t*)msg);
 
 	sprintf(msg, "%ldms", nn_inference_time);
@@ -704,7 +718,6 @@ void ai_process_display(void) {
 
 void MX_X_CUBE_AI_Init(void)
 {
-    BSP_SDRAM_Init();
     /* USER CODE BEGIN 5 */
 
 	/** @brief Initialize network */
@@ -717,12 +730,13 @@ void MX_X_CUBE_AI_Init(void)
 	}
 
 #if VERBOSE_LEVEL == 2
-	printf("[%s:%d] NN model name : %s\r\n", __FILE__, __LINE__, report.model_name);
-	printf("[%s:%d] NN model signature : %s\r\n", __FILE__, __LINE__, report.model_signature);
-
 	// get the reports
 	ai_input = &report.inputs[0];
 	ai_output = &report.outputs[0];
+
+	printf("[%s:%d] NN model name : %s\r\n", __FILE__, __LINE__, report.model_name);
+	printf("[%s:%d] NN model signature : %s\r\n", __FILE__, __LINE__, report.model_signature);
+
 	printf("[%s:%d] input[0] : (%lu, %lu, %lu)\r\n", __FILE__, __LINE__,
 			AI_BUFFER_SHAPE_ELEM(ai_input, AI_SHAPE_HEIGHT),
 			AI_BUFFER_SHAPE_ELEM(ai_input, AI_SHAPE_WIDTH),

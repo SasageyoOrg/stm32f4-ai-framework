@@ -51,7 +51,8 @@ typedef struct RGB
 							"HotDog", "Lasagna", "Pizza", "Risotto", "Spaghetti Bolognese", "Steak"};
 #define AI_IN_NORM_SCALE	255.0f
 #define AI_IN_NORM_ZP		0
-#define AI_TOP_N_RESULTS	1
+#define AI_RB_SWAP			1
+#define AI_TOP_N_RESULTS	3
 // absolute address of the folder on the USB drive where the images are located
 #define PATH_TO_JPEGS		"/food"
 // verbose option : [0-2] (the higher the value, the more info will be printed )
