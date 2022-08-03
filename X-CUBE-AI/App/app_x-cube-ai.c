@@ -704,7 +704,6 @@ void ai_process_display(void) {
 
 void MX_X_CUBE_AI_Init(void)
 {
-    BSP_SDRAM_Init();
     /* USER CODE BEGIN 5 */
 
 	/** @brief Initialize network */
