@@ -1,41 +1,41 @@
 
 /**
-  ******************************************************************************
-  * @file    app_x-cube-ai.c
-  * @author  X-CUBE-AI C code generator
-  * @brief   AI program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2022 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file    app_x-cube-ai.c
+ * @author  X-CUBE-AI C code generator
+ * @brief   AI program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2022 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 
- /*
-  * Description
-  *   v1.0 - Minimum template to show how to use the Embedded Client API
-  *          model. Only one input and one output is supported. All
-  *          memory resources are allocated statically (AI_NETWORK_XX, defines
-  *          are used).
-  *          Re-target of the printf function is out-of-scope.
-  *   v2.0 - add multiple IO and/or multiple heap support
-  *
-  *   For more information, see the embeded documentation:
-  *
-  *       [1] %X_CUBE_AI_DIR%/Documentation/index.html
-  *
-  *   X_CUBE_AI_DIR indicates the location where the X-CUBE-AI pack is installed
-  *   typical : C:\Users\<user_name>\STM32Cube\Repository\STMicroelectronics\X-CUBE-AI\7.1.0
-  */
+/*
+ * Description
+ *   v1.0 - Minimum template to show how to use the Embedded Client API
+ *          model. Only one input and one output is supported. All
+ *          memory resources are allocated statically (AI_NETWORK_XX, defines
+ *          are used).
+ *          Re-target of the printf function is out-of-scope.
+ *   v2.0 - add multiple IO and/or multiple heap support
+ *
+ *   For more information, see the embeded documentation:
+ *
+ *       [1] %X_CUBE_AI_DIR%/Documentation/index.html
+ *
+ *   X_CUBE_AI_DIR indicates the location where the X-CUBE-AI pack is installed
+ *   typical : C:\Users\<user_name>\STM32Cube\Repository\STMicroelectronics\X-CUBE-AI\7.1.0
+ */
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
@@ -110,29 +110,28 @@ ai_float ai_get_output_scale(void);
 #if !defined(AI_NETWORK_INPUTS_IN_ACTIVATIONS)
 AI_ALIGNED(4) ai_i8 data_in_1[AI_NETWORK_IN_1_SIZE_BYTES] __attribute__((section(".extram")));
 ai_i8* data_ins[AI_NETWORK_IN_NUM] = {
-data_in_1
+		data_in_1
 };
 #else
 ai_i8* data_ins[AI_NETWORK_IN_NUM] = {
-NULL
+		NULL
 };
 #endif
 
 #if !defined(AI_NETWORK_OUTPUTS_IN_ACTIVATIONS)
 AI_ALIGNED(4) ai_i8 data_out_1[AI_NETWORK_OUT_1_SIZE_BYTES] __attribute__((section(".extram")));
-//AI_ALIGNED(4) ai_i8 data_out_1[AI_NETWORK_OUT_1_SIZE_BYTES];
 ai_i8* data_outs[AI_NETWORK_OUT_NUM] = {
-data_out_1
+		data_out_1
 };
 #else
 ai_i8* data_outs[AI_NETWORK_OUT_NUM] = {
-NULL
+		NULL
 };
 #endif
 
 /* Activations buffers -------------------------------------------------------*/
 
-ai_handle data_activations0[] = {(ai_handle) 0xD0300000};
+ai_handle data_activations0[] = {(ai_handle) 0xD0400000};
 
 /* AI objects ----------------------------------------------------------------*/
 
@@ -143,62 +142,62 @@ static ai_buffer* ai_output;
 
 static void ai_log_err(const ai_error err, const char *fct)
 {
-  /* USER CODE BEGIN log */
+	/* USER CODE BEGIN log */
 	if (fct)
 		printf("[%s:%d] TEMPLATE - Error (%s) - type=0x%02x code=0x%02x\r\n", __FILE__, __LINE__, fct, err.type, err.code);
 	else
 		printf("[%s:%d] TEMPLATE - Error - type=0x%02x code=0x%02x\r\n", __FILE__, __LINE__, err.type, err.code);
 
 	do {} while (1);
-  /* USER CODE END log */
+	/* USER CODE END log */
 }
 
 static int ai_boostrap(ai_handle *act_addr)
 {
-  ai_error err;
+	ai_error err;
 
-  /* Create and initialize an instance of the model */
-  err = ai_network_create_and_init(&network, act_addr, NULL);
-  if (err.type != AI_ERROR_NONE) {
-    ai_log_err(err, "ai_network_create_and_init");
-    return -1;
-  }
+	/* Create and initialize an instance of the model */
+	err = ai_network_create_and_init(&network, act_addr, NULL);
+	if (err.type != AI_ERROR_NONE) {
+		ai_log_err(err, "ai_network_create_and_init");
+		return -1;
+	}
 
-  ai_input = ai_network_inputs_get(network, NULL);
-  ai_output = ai_network_outputs_get(network, NULL);
+	ai_input = ai_network_inputs_get(network, NULL);
+	ai_output = ai_network_outputs_get(network, NULL);
 
 #if defined(AI_NETWORK_INPUTS_IN_ACTIVATIONS)
-  /*  In the case where "--allocate-inputs" option is used, memory buffer can be
-   *  used from the activations buffer. This is not mandatory.
-   */
-  for (int idx=0; idx < AI_NETWORK_IN_NUM; idx++) {
-	data_ins[idx] = ai_input[idx].data;
-  }
+	/*  In the case where "--allocate-inputs" option is used, memory buffer can be
+	 *  used from the activations buffer. This is not mandatory.
+	 */
+	for (int idx=0; idx < AI_NETWORK_IN_NUM; idx++) {
+		data_ins[idx] = ai_input[idx].data;
+	}
 #else
-  for (int idx=0; idx < AI_NETWORK_IN_NUM; idx++) {
-	  ai_input[idx].data = data_ins[idx];
-  }
+	for (int idx=0; idx < AI_NETWORK_IN_NUM; idx++) {
+		ai_input[idx].data = data_ins[idx];
+	}
 #endif
 
 #if defined(AI_NETWORK_OUTPUTS_IN_ACTIVATIONS)
-  /*  In the case where "--allocate-outputs" option is used, memory buffer can be
-   *  used from the activations buffer. This is no mandatory.
-   */
-  for (int idx=0; idx < AI_NETWORK_OUT_NUM; idx++) {
-	data_outs[idx] = ai_output[idx].data;
-  }
+	/*  In the case where "--allocate-outputs" option is used, memory buffer can be
+	 *  used from the activations buffer. This is no mandatory.
+	 */
+	for (int idx=0; idx < AI_NETWORK_OUT_NUM; idx++) {
+		data_outs[idx] = ai_output[idx].data;
+	}
 #else
-  for (int idx=0; idx < AI_NETWORK_OUT_NUM; idx++) {
-	ai_output[idx].data = data_outs[idx];
-  }
+	for (int idx=0; idx < AI_NETWORK_OUT_NUM; idx++) {
+		ai_output[idx].data = data_outs[idx];
+	}
 #endif
 
-  return 0;
+	return 0;
 }
 
 static int ai_run(void)
 {
-  ai_i32 batch;
+	ai_i32 batch;
 
 	/** set input/output buffer addresses */
 	ai_input[0].data = AI_HANDLE_PTR(data_in_1);
@@ -212,7 +211,7 @@ static int ai_run(void)
 		return -1;
 	}
 
-  return 0;
+	return 0;
 }
 
 /* USER CODE BEGIN 2 */
@@ -346,21 +345,21 @@ static void Compute_pix_conv_tab() {
 
 	// retrieve the quantization scheme used to quantize the neural network
 	switch(ai_get_input_quantization_scheme()) {
-		// PVC and normalization
-		case AI_FXP_Q:
-			Precompute_8FXP(lut, ai_get_input_quantized_format());
-			break;
+	// PVC and normalization
+	case AI_FXP_Q:
+		Precompute_8FXP(lut, ai_get_input_quantized_format());
+		break;
 
-		case AI_UINT_Q:
-			Precompute_8IntU(lut, ai_get_input_scale(), ai_get_input_zero_point(), prepro_scale, prepro_zeropoint);
-			break;
+	case AI_UINT_Q:
+		Precompute_8IntU(lut, ai_get_input_scale(), ai_get_input_zero_point(), prepro_scale, prepro_zeropoint);
+		break;
 
-		case AI_SINT_Q:
-			Precompute_8IntS(lut, ai_get_input_scale(), ai_get_input_zero_point(), prepro_scale, prepro_zeropoint);
-			break;
+	case AI_SINT_Q:
+		Precompute_8IntS(lut, ai_get_input_scale(), ai_get_input_zero_point(), prepro_scale, prepro_zeropoint);
+		break;
 
-		default:
-			break;
+	default:
+		break;
 	}
 }
 
@@ -504,21 +503,21 @@ void AI_PixelValueConversion(void *pSrc)
 {
 	// check format of the input to call the right function
 	switch(ai_get_input_format()) {
-		case AI_BUFFER_FMT_TYPE_Q:
-			AI_PixelValueConversion_QuantizedNN((uint8_t *)pSrc);
-			break;
-		case AI_BUFFER_FMT_TYPE_FLOAT:
-			if(AI_IN_NORM_SCALE == 255.0f) {
-				AI_PixelValueConversion_FloatNN(pSrc, 0);
-			} else if(AI_IN_NORM_SCALE == 127.0f) {
-				AI_PixelValueConversion_FloatNN(pSrc, 1);
-			} else {
-				// error: input not expected
-			}
-			break;
-		default:
+	case AI_BUFFER_FMT_TYPE_Q:
+		AI_PixelValueConversion_QuantizedNN((uint8_t *)pSrc);
+		break;
+	case AI_BUFFER_FMT_TYPE_FLOAT:
+		if(AI_IN_NORM_SCALE == 255.0f) {
+			AI_PixelValueConversion_FloatNN(pSrc, 0);
+		} else if(AI_IN_NORM_SCALE == 127.0f) {
+			AI_PixelValueConversion_FloatNN(pSrc, 1);
+		} else {
 			// error: input not expected
-			break;
+		}
+		break;
+	default:
+		// error: input not expected
+		break;
 	}
 }
 
@@ -538,46 +537,46 @@ void AI_Output_Dequantize(void)
 
 		// check what type of quantization scheme is used for the output
 		switch(ai_get_output_quantization_scheme()) {
-			case AI_FXP_Q:
-				scale=ai_get_output_fxp_scale();
+		case AI_FXP_Q:
+			scale=ai_get_output_fxp_scale();
 
-				// in-place 8-bit to float conversion
-				nn_output_i8 = (ai_i8 *) data_out_1;
-				nn_output_f32 = (float *) data_out_1;
-				for(int32_t i = AI_NETWORK_OUT_1_SIZE - 1; i >= 0; i--) {
-					float q_value = (float) *(nn_output_i8 + i);
-					*(nn_output_f32 + i) = scale * q_value;
-				}
-				break;
+			// in-place 8-bit to float conversion
+			nn_output_i8 = (ai_i8 *) data_out_1;
+			nn_output_f32 = (float *) data_out_1;
+			for(int32_t i = AI_NETWORK_OUT_1_SIZE - 1; i >= 0; i--) {
+				float q_value = (float) *(nn_output_i8 + i);
+				*(nn_output_f32 + i) = scale * q_value;
+			}
+			break;
 
-			case AI_UINT_Q:
-				scale = ai_get_output_scale();
-				zero_point = ai_get_output_zero_point();
+		case AI_UINT_Q:
+			scale = ai_get_output_scale();
+			zero_point = ai_get_output_zero_point();
 
-				// in-place 8-bit to float conversion
-				nn_output_u8 = (ai_u8 *) data_out_1;
-				nn_output_f32 = (float *) data_out_1;
-				for(int32_t i = AI_NETWORK_OUT_1_SIZE - 1; i >= 0; i--) {
-					int32_t q_value = (int32_t) *(nn_output_u8 + i);
-					*(nn_output_f32 + i) = scale * (q_value - zero_point);
-				}
-				break;
+			// in-place 8-bit to float conversion
+			nn_output_u8 = (ai_u8 *) data_out_1;
+			nn_output_f32 = (float *) data_out_1;
+			for(int32_t i = AI_NETWORK_OUT_1_SIZE - 1; i >= 0; i--) {
+				int32_t q_value = (int32_t) *(nn_output_u8 + i);
+				*(nn_output_f32 + i) = scale * (q_value - zero_point);
+			}
+			break;
 
-			case AI_SINT_Q:
-				scale = ai_get_output_scale();
-				zero_point = ai_get_output_zero_point();
+		case AI_SINT_Q:
+			scale = ai_get_output_scale();
+			zero_point = ai_get_output_zero_point();
 
-				// in-place 8-bit to float conversion
-				nn_output_i8 = (ai_i8 *) data_out_1;
-				nn_output_f32 = (float *) data_out_1;
-				for(int32_t i = AI_NETWORK_OUT_1_SIZE - 1; i >= 0; i--) {
-					int32_t q_value = (int32_t) *(nn_output_i8 + i);
-					*(nn_output_f32 + i) = scale * (q_value - zero_point);
-				}
-				break;
+			// in-place 8-bit to float conversion
+			nn_output_i8 = (ai_i8 *) data_out_1;
+			nn_output_f32 = (float *) data_out_1;
+			for(int32_t i = AI_NETWORK_OUT_1_SIZE - 1; i >= 0; i--) {
+				int32_t q_value = (int32_t) *(nn_output_i8 + i);
+				*(nn_output_f32 + i) = scale * (q_value - zero_point);
+			}
+			break;
 
-			default:
-				break;
+		default:
+			break;
 		}
 	}
 }
@@ -594,11 +593,11 @@ void ai_process_preprocess() {
 	// uint8_t *image_buffer_preproccesed = (uint8_t*)malloc(sizeof(uint8_t) * bufferBytes);
 	// PreProces_InputBuffer((uint8_t *)image_buffer_resized, image_buffer_preproccesed);
 
-	#if VERBOSE_LEVEL == 2
-		printf("[%s:%d] ai pre-processing - Pixel Value Conversion \r\n", __FILE__, __LINE__);
-	#elif VERBOSE_LEVEL == 1
-		printf("ai pre-processing: PVC \r\n");
-	#endif
+#if VERBOSE_LEVEL == 2
+	printf("[%s:%d] ai pre-processing - Pixel Value Conversion \r\n", __FILE__, __LINE__);
+#elif VERBOSE_LEVEL == 1
+	printf("ai pre-processing: PVC \r\n");
+#endif
 
 	// Pixel Value Conversion for quantized or float neural networks
 	AI_PixelValueConversion((void *)image_buffer_resized);
@@ -610,11 +609,11 @@ void ai_process_inference(void) {
 	uint32_t tinf_start;
 	uint32_t tinf_stop;
 
-	#if VERBOSE_LEVEL == 2
-		printf("[%s:%d] inference - running the neural network \r\n", __FILE__, __LINE__);
-	#elif VERBOSE_LEVEL == 1
-		printf("inference \r\n");
-	#endif
+#if VERBOSE_LEVEL == 2
+	printf("[%s:%d] inference - running the neural network \r\n", __FILE__, __LINE__);
+#elif VERBOSE_LEVEL == 1
+	printf("inference \r\n");
+#endif
 
 	tinf_start = HAL_GetTick();
 	res = ai_run();
@@ -630,20 +629,20 @@ void ai_process_inference(void) {
 
 void ai_process_postprocess(void) {
 	// NN ouput dequantization if required
-	#if VERBOSE_LEVEL == 2
-		printf("[%s:%d] post-processing - dequantize neural network's output \r\n", __FILE__, __LINE__);
-	#elif VERBOSE_LEVEL == 1
-		printf("ai post-processing: dequantize output \r\n");
-	#endif
+#if VERBOSE_LEVEL == 2
+	printf("[%s:%d] post-processing - dequantize neural network's output \r\n", __FILE__, __LINE__);
+#elif VERBOSE_LEVEL == 1
+	printf("ai post-processing: dequantize output \r\n");
+#endif
 
 	AI_Output_Dequantize();
 
 	// perform ranking
-	#if VERBOSE_LEVEL == 2
-		printf("[%s:%d] post-processing - perform ranking with bubblesort \r\n", __FILE__, __LINE__);
-	#elif VERBOSE_LEVEL == 1
-		printf("ai post-processing: bubblesort \r\n");
-	#endif
+#if VERBOSE_LEVEL == 2
+	printf("[%s:%d] post-processing - perform ranking with bubblesort \r\n", __FILE__, __LINE__);
+#elif VERBOSE_LEVEL == 1
+	printf("ai post-processing: bubblesort \r\n");
+#endif
 
 	// setup the ranking array for the ai classes
 	for (int i = 0; i < AI_NETWORK_OUT_1_SIZE; i++) ranking[i] = i;
@@ -660,32 +659,32 @@ void ai_process_display(void) {
 	const int nn_top_n_display = 3;
 
 	// App_Output_Display()
-	#if VERBOSE_LEVEL == 2
-		printf("[%s:%d] inference results: \r\n", __FILE__, __LINE__);
-	#elif VERBOSE_LEVEL == 1 || VERBOSE_LEVEL == 0
-		printf("inference results: \r\n");
-	#endif
+#if VERBOSE_LEVEL == 2
+	printf("[%s:%d] inference results: \r\n", __FILE__, __LINE__);
+#elif VERBOSE_LEVEL == 1 || VERBOSE_LEVEL == 0
+	printf("inference results: \r\n");
+#endif
 
 	sprintf(msg, "Inference results:");
 	BSP_LCD_DisplayStringAtLine(x++, (uint8_t*)msg);
 
 	for (int i = 0; i < nn_top_n_display; i++)
 	{
-		#if VERBOSE_LEVEL == 2
-			printf("[%s:%d] %i) %s -> %.1f%% \r\n", __FILE__, __LINE__, (i+1), output_labels[ranking[i]], *((float*)(data_out_1)+i) * 100);
-		#elif VERBOSE_LEVEL == 1 || VERBOSE_LEVEL == 0
-			printf("%i) %s -> %.1f%% \r\n", (i+1), output_labels[ranking[i]], *((float*)(data_out_1)+i) * 100);
-		#endif
+#if VERBOSE_LEVEL == 2
+		printf("[%s:%d] %i) %s -> %.1f%% \r\n", __FILE__, __LINE__, (i+1), output_labels[ranking[i]], *((float*)(data_out_1)+i) * 100);
+#elif VERBOSE_LEVEL == 1 || VERBOSE_LEVEL == 0
+		printf("%i) %s -> %.1f%% \r\n", (i+1), output_labels[ranking[i]], *((float*)(data_out_1)+i) * 100);
+#endif
 
 		sprintf(msg, "%i) %s -> %.1f%%", (i+1), output_labels[ranking[i]], *((float*)(data_out_1)+i) * 100);
 		BSP_LCD_DisplayStringAtLine(x++, (uint8_t*)msg);
 	}
 
-	#if VERBOSE_LEVEL == 2
-		printf("[%s:%d] inference time: %ldms \r\n", __FILE__, __LINE__, nn_inference_time);
-	#elif VERBOSE_LEVEL == 1 || VERBOSE_LEVEL == 0
-		printf("inference time: %ldms \r\n", nn_inference_time);
-	#endif
+#if VERBOSE_LEVEL == 2
+	printf("[%s:%d] inference time: %ldms \r\n", __FILE__, __LINE__, nn_inference_time);
+#elif VERBOSE_LEVEL == 1 || VERBOSE_LEVEL == 0
+	printf("inference time: %ldms \r\n", nn_inference_time);
+#endif
 
 	x++;
 
@@ -695,9 +694,9 @@ void ai_process_display(void) {
 	sprintf(msg, "%ldms", nn_inference_time);
 	BSP_LCD_DisplayStringAtLine(x, (uint8_t*)msg);
 
-	#if VERBOSE_LEVEL == 2
-		printf("[%s:%d] end \r\n", __FILE__, __LINE__);
-	#endif
+#if VERBOSE_LEVEL == 2
+	printf("[%s:%d] end \r\n", __FILE__, __LINE__);
+#endif
 }
 
 /* USER CODE END 2 */
@@ -706,8 +705,7 @@ void ai_process_display(void) {
 
 void MX_X_CUBE_AI_Init(void)
 {
-    BSP_SDRAM_Init();
-    /* USER CODE BEGIN 5 */
+	/* USER CODE BEGIN 5 */
 
 	/** @brief Initialize network */
 	ai_boostrap(data_activations0);
@@ -718,32 +716,32 @@ void MX_X_CUBE_AI_Init(void)
 		printf("ai get report error\r\n");
 	}
 
-	#if VERBOSE_LEVEL == 2
-		printf("[%s:%d] NN model name : %s\r\n", __FILE__, __LINE__, report.model_name);
-		printf("[%s:%d] NN model signature : %s\r\n", __FILE__, __LINE__, report.model_signature);
+#if VERBOSE_LEVEL == 2
+	printf("[%s:%d] NN model name : %s\r\n", __FILE__, __LINE__, report.model_name);
+	printf("[%s:%d] NN model signature : %s\r\n", __FILE__, __LINE__, report.model_signature);
 
-		// get the reports
-		ai_input = &report.inputs[0];
-		ai_output = &report.outputs[0];
-		printf("[%s:%d] input[0] : (%lu, %lu, %lu)\r\n", __FILE__, __LINE__,
-														 AI_BUFFER_SHAPE_ELEM(ai_input, AI_SHAPE_HEIGHT),
-														 AI_BUFFER_SHAPE_ELEM(ai_input, AI_SHAPE_WIDTH),
-														 AI_BUFFER_SHAPE_ELEM(ai_input, AI_SHAPE_CHANNEL));
-		printf("[%s:%d] output[0] : (%lu, %lu, %lu)\r\n", __FILE__, __LINE__,
-														  AI_BUFFER_SHAPE_ELEM(ai_output, AI_SHAPE_HEIGHT),
-														  AI_BUFFER_SHAPE_ELEM(ai_output, AI_SHAPE_WIDTH),
-														  AI_BUFFER_SHAPE_ELEM(ai_output, AI_SHAPE_CHANNEL));
-	#endif
+	// get the reports
+	ai_input = &report.inputs[0];
+	ai_output = &report.outputs[0];
+	printf("[%s:%d] input[0] : (%lu, %lu, %lu)\r\n", __FILE__, __LINE__,
+			AI_BUFFER_SHAPE_ELEM(ai_input, AI_SHAPE_HEIGHT),
+			AI_BUFFER_SHAPE_ELEM(ai_input, AI_SHAPE_WIDTH),
+			AI_BUFFER_SHAPE_ELEM(ai_input, AI_SHAPE_CHANNEL));
+	printf("[%s:%d] output[0] : (%lu, %lu, %lu)\r\n", __FILE__, __LINE__,
+			AI_BUFFER_SHAPE_ELEM(ai_output, AI_SHAPE_HEIGHT),
+			AI_BUFFER_SHAPE_ELEM(ai_output, AI_SHAPE_WIDTH),
+			AI_BUFFER_SHAPE_ELEM(ai_output, AI_SHAPE_CHANNEL));
+#endif
 
-	// compute the pixel conversion look up table
+// compute the pixel conversion look up table
 	Compute_pix_conv_tab();
 
-    /* USER CODE END 5 */
+	/* USER CODE END 5 */
 }
 
 void MX_X_CUBE_AI_Process(void)
 {
-    /* USER CODE BEGIN 6 */
+	/* USER CODE BEGIN 6 */
 
 	/* ------------------ PRE-PROCESSING ------------------- */
 	ai_process_preprocess();
@@ -757,7 +755,7 @@ void MX_X_CUBE_AI_Process(void)
 	/* ----------------- INFERENCE RESULTS ----------------- */
 	ai_process_display();
 
-    /* USER CODE END 6 */
+	/* USER CODE END 6 */
 }
 #ifdef __cplusplus
 }
