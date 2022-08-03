@@ -58,3 +58,6 @@ dkms.conf
 
 .ai/*
 .settings/*
+*.launch
+
+Debug/*

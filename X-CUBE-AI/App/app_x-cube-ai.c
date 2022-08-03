@@ -243,18 +243,12 @@ uint32_t ai_get_input_quantization_scheme(void)
 	ai_buffer_format fmt=AI_BUFFER_FORMAT(&ai_input[0]);
 	ai_size sign = AI_BUFFER_FMT_GET_SIGN(fmt);
 
-	if(scale==0)
-	{
+	if(scale==0) {
 		return AI_FXP_Q;
-	}
-	else
-	{
-		if(sign==0)
-		{
+	} else {
+		if(sign==0) {
 			return AI_UINT_Q;
-		}
-		else
-		{
+		} else {
 			return AI_SINT_Q;
 		}
 	}
@@ -267,18 +261,12 @@ uint32_t ai_get_output_quantization_scheme(void)
 	ai_buffer_format fmt=AI_BUFFER_FORMAT(&ai_output[0]);
 	ai_size sign = AI_BUFFER_FMT_GET_SIGN(fmt);
 
-	if(scale==0)
-	{
+	if(scale==0) {
 		return AI_FXP_Q;
-	}
-	else
-	{
-		if(sign==0)
-		{
+	} else {
+		if(sign==0) {
 			return AI_UINT_Q;
-		}
-		else
-		{
+		} else {
 			return AI_SINT_Q;
 		}
 	}
@@ -320,18 +308,14 @@ ai_i32 ai_get_output_zero_point(void)
 
 static void Precompute_8FXP(uint8_t *lut, uint32_t q_input_shift)
 {
-	uint32_t index;
-
-	for(index=0;index<256;index++)
-	{
+	for(uint32_t index=0;index<256;index++) {
 		*(lut+index)=__USAT((index + (1 << q_input_shift)) >> (1 + q_input_shift), 8);
 	}
 }
 
 static void Precompute_8IntU(uint8_t *lut, float scale, int32_t zp, float scale_prepro, int32_t zp_prepro)
 {
-	for (int32_t i = 0 ; i < 256 ; i++)
-	{
+	for (int32_t i = 0 ; i < 256 ; i++) {
 		float tmp = (i - zp_prepro) * scale_prepro;
 		*(lut + i) = _CLAMP(zp + _ROUND(tmp * scale, int32_t), 0, 255, uint8_t);
 	}
@@ -339,16 +323,50 @@ static void Precompute_8IntU(uint8_t *lut, float scale, int32_t zp, float scale_
 
 static void Precompute_8IntS(uint8_t *lut, float scale, int32_t zp, float scale_prepro, int32_t zp_prepro)
 {
-	for (int32_t i = 0 ; i < 256 ; i++)
-	{
+	for (int32_t i = 0 ; i < 256 ; i++) {
 		float tmp = (i - zp_prepro) * scale_prepro;
 		*(lut + i) = _CLAMP(zp + _ROUND(tmp * scale, int32_t),  -128, 127, int8_t);
 	}
 }
 
 
+static void Compute_pix_conv_tab() {
+	// pixel conversion look up table
+	uint8_t *lut = pixel_conv_lut;
+
+	/*
+	 * factors used for neural networks trained on data normalized in the range:
+	 * [-1, 1]	-> {127.5, 127} (es. Teachable Machine models)
+	 * [0, 1]	-> {255, 0} 	(es. food recognition model)
+	 *
+	 * source: https://wiki.st.com/stm32mcu/wiki/AI:How_to_use_Teachable_Machine_to_create_an_image_classification_application_on_STM32
+	 */
+	float prepro_scale = AI_IN_NORM_SCALE;
+	int32_t prepro_zeropoint = AI_IN_NORM_ZP;
+
+	// retrieve the quantization scheme used to quantize the neural network
+	switch(ai_get_input_quantization_scheme()) {
+		// PVC and normalization
+		case AI_FXP_Q:
+			Precompute_8FXP(lut, ai_get_input_quantized_format());
+			break;
+
+		case AI_UINT_Q:
+			Precompute_8IntU(lut, ai_get_input_scale(), ai_get_input_zero_point(), prepro_scale, prepro_zeropoint);
+			break;
+
+		case AI_SINT_Q:
+			Precompute_8IntS(lut, ai_get_input_scale(), ai_get_input_zero_point(), prepro_scale, prepro_zeropoint);
+			break;
+
+		default:
+			break;
+	}
+}
+
+
 /**
- * @brief  Performs pixel R & B swapping
+ * @brief  Performs pixel R&B swapping
  */
 void PREPROC_Pixel_RB_Swap(void *pSrc, void *pDst, uint32_t pixels)
 {
@@ -359,7 +377,7 @@ void PREPROC_Pixel_RB_Swap(void *pSrc, void *pDst, uint32_t pixels)
 
 	for (int i = pixels-1; i >= 0; i--)
 	{
-		tmp_r=pivot[i].R;
+		tmp_r = pivot[i].R;
 
 		dest[i].R = pivot[i].B;
 		dest[i].B = tmp_r;
@@ -386,55 +404,30 @@ static void STM32Ipl_SimpleCopy(const uint8_t *src, uint8_t *dst, uint32_t size,
 }
 
 
-static void Compute_pix_conv_tab() {
-	uint8_t *lut = pixel_conv_lut;
-
-	/*
-	 * factors used for neural networks trained on data normalized in the range [-1, 1]
-	 * source: https://wiki.st.com/stm32mcu/wiki/AI:How_to_use_Teachable_Machine_to_create_an_image_classification_application_on_STM32
-	 */
-	float prepro_scale = 127.5f;
-	int32_t prepro_zp = 127;
-
-	/*Retrieve the quantization scheme used to quantize the neural network*/
-	switch(ai_get_input_quantization_scheme())
-	{
-		/*Pixel value conversion and normalization*/
-		case AI_FXP_Q:
-			Precompute_8FXP(lut, ai_get_input_quantized_format());
-			break;
-		case AI_UINT_Q:
-			Precompute_8IntU(lut, ai_get_input_scale(), ai_get_input_zero_point(), prepro_scale, prepro_zp);
-			break;
-		case AI_SINT_Q:
-			Precompute_8IntS(lut, ai_get_input_scale(), ai_get_input_zero_point(), prepro_scale, prepro_zp);
-			break;
-		default:
-			break;
-	}
-}
-
-
 /**
- * @brief get the destination buffer with R & B channel swapped and convert the bpp of the destination image if needed
+ * @brief convert the pixel format and swap the R&B components of the destination buffer if needed
  */
-void InputBuffer_PreProcessing(uint8_t *bSrc, uint8_t *bDst)
+void PreProces_InputBuffer(uint8_t *bSrc, uint8_t *bDst)
 {
 	/*
-	 * maybe we need to convert bDst in IMAGE_BPP_RGB565 (or other)
-	 * it involves changes in 1.2 STM32Ipl_ConvertRev()
-	 * at the moment this function is unused
+	 * 1° step:	R&B Channel Swap
+	 *			swap the red and blue channel on the destination buffer
+	 *
+	 * 2° step:	Pixel Format Conversion (PFC)
+	 * 			when the image buffer and the neural network's input format are different
+	 * 			formats: Binary (2 bit), Grayscale (8 bit), RGB565 (16 bit), RGB888 (24bit)
+	 * 			it involves changes in 1.2) but at the moment this function is unused
 	 */
-	// 1. PREPROC_PixelFormatConversion()
-	uint32_t nb_pixels = IMAGE_WIDTH * IMAGE_HEIGHT;
-	int rb_swap = 0;
 
-	// only if -> rb_swap = 1
+	// 1. R&B Channel Swap
+	uint32_t nb_pixels = IMAGE_WIDTH * IMAGE_HEIGHT;
+	int rb_swap = 0;	// todo: it need a method to detect if necessary
+
 	if(rb_swap) {
 		PREPROC_Pixel_RB_Swap(bSrc, bDst, nb_pixels);
 	}
 
-	// 1.1 Image_CheckResizeMemoryLayout()
+	// 1.1 Image_CheckResizeMemoryLayout() -> to get the 'reverse' value
 	uint32_t src_size = bufferBytes;
 	uint32_t dst_size = bufferBytes;
 	uint32_t src_start = (uint32_t)bSrc;
@@ -448,8 +441,9 @@ void InputBuffer_PreProcessing(uint8_t *bSrc, uint8_t *bDst)
 		reverse = true;
 	}
 
-	// 1.2 STM32Ipl_ConvertRev()
+	// 1.2 Pixel Format Conversion -> STM32Ipl_ConvertRev()
 	if (bSrc != bDst) {
+		// at the moment instead of the conversion we only do a simple copy
 		STM32Ipl_SimpleCopy(bSrc, bDst, dst_size, reverse);
 	}
 }
@@ -460,137 +454,154 @@ void InputBuffer_PreProcessing(uint8_t *bSrc, uint8_t *bDst)
  */
 void AI_PixelValueConversion_QuantizedNN(uint8_t *pSrc)
 {
+	// AI_NETWORK_IN_1_SIZE = AI_NETWORK_WIDTH * AI_NETWORK_HEIGHT * AI_NETWORK_CHANNEL;
 	const uint32_t nb_pixels = AI_NETWORK_IN_1_SIZE;
 	const uint8_t *lut = pixel_conv_lut;
 	uint8_t *pDst = (uint8_t *)data_in_1;
 
-	if (pDst > pSrc)
-	{
-		for (int32_t i = nb_pixels - 1; i >= 0; i--)
-		{
+	if (pDst > pSrc) {
+		for (int32_t i = nb_pixels - 1; i >= 0; i--) {
 			pDst[i] = lut[pSrc[i]];
 		}
-	}
-	else
-	{
-		for (int32_t i = 0; i < nb_pixels; i++)
-		{
+	} else {
+		for (int32_t i = 0; i < nb_pixels; i++) {
 			pDst[i] = lut[pSrc[i]];
 		}
 	}
 }
 
+/*
+ * @brief  Performs pixel conversion from 8-bits integer to float simple precision with normalization
+ */
+void AI_PixelValueConversion_FloatNN(uint8_t *pSrc, uint32_t normalization_type)
+{
+	const uint32_t nb_pixels = AI_NETWORK_IN_1_SIZE;
+	float *pDst = (float *)data_in_1;
+	float div = 1.0F; // avoid division by zero
+	float sub = 0.0F;
+
+	if (normalization_type == 0) {
+		// NN input data in the range [0 , +1]
+		div=255.0F;
+		sub=0.0F;
+	} else if (normalization_type == 1) {
+		// NN input data in the range [-1 , +1]
+		div=127.5F;
+		sub=1.0F;
+	}
+
+	for (int32_t i = 0; i < nb_pixels; i++)
+	{
+		*pDst++ = (((float) *pSrc++) / div) - sub;
+	}
+}
+
 
 /**
- * @brief Performs the dequantization of a quantized NN output
+ * @brief Performs pixel conversion in format expected by NN input
+ */
+void AI_PixelValueConversion(void *pSrc)
+{
+	// check format of the input to call the right function
+	switch(ai_get_input_format()) {
+		case AI_BUFFER_FMT_TYPE_Q:
+			AI_PixelValueConversion_QuantizedNN((uint8_t *)pSrc);
+			break;
+		case AI_BUFFER_FMT_TYPE_FLOAT:
+			if(AI_IN_NORM_SCALE == 255.0f) {
+				AI_PixelValueConversion_FloatNN(pSrc, 0);
+			} else if(AI_IN_NORM_SCALE == 127.0f) {
+				AI_PixelValueConversion_FloatNN(pSrc, 1);
+			} else {
+				// error: input not expected
+			}
+			break;
+		default:
+			// error: input not expected
+			break;
+	}
+}
+
+
+/**
+ * @brief Performs the de-quantization of a quantized NN output
  */
 void AI_Output_Dequantize(void)
 {
-	/**Check format of the output and convert to float if required**/
-	if(ai_get_output_format() == AI_BUFFER_FMT_TYPE_Q)
-	{
+	// check format of the output and convert to float if required
+	if(ai_get_output_format() == AI_BUFFER_FMT_TYPE_Q) {
 		float scale;
 		int32_t zero_point;
 		ai_i8 *nn_output_i8;
 		ai_u8 *nn_output_u8;
 		float *nn_output_f32;
 
-		/*Check what type of quantization scheme is used for the output*/
-		switch(ai_get_output_quantization_scheme())
-		{
-		case AI_FXP_Q:
+		// check what type of quantization scheme is used for the output
+		switch(ai_get_output_quantization_scheme()) {
+			case AI_FXP_Q:
+				scale=ai_get_output_fxp_scale();
 
-			scale=ai_get_output_fxp_scale();
+				// in-place 8-bit to float conversion
+				nn_output_i8 = (ai_i8 *) data_out_1;
+				nn_output_f32 = (float *) data_out_1;
+				for(int32_t i = AI_NETWORK_OUT_1_SIZE - 1; i >= 0; i--) {
+					float q_value = (float) *(nn_output_i8 + i);
+					*(nn_output_f32 + i) = scale * q_value;
+				}
+				break;
 
-			/* Dequantize NN output - in-place 8-bit to float conversion */
-			nn_output_i8 = (ai_i8 *) data_out_1;
-			nn_output_f32 = (float *) data_out_1;
-			for(int32_t i = AI_NETWORK_OUT_1_SIZE - 1; i >= 0; i--)
-			{
-				float q_value = (float) *(nn_output_i8 + i);
-				*(nn_output_f32 + i) = scale * q_value;
-			}
-			break;
+			case AI_UINT_Q:
+				scale = ai_get_output_scale();
+				zero_point = ai_get_output_zero_point();
 
-		case AI_UINT_Q:
+				// in-place 8-bit to float conversion
+				nn_output_u8 = (ai_u8 *) data_out_1;
+				nn_output_f32 = (float *) data_out_1;
+				for(int32_t i = AI_NETWORK_OUT_1_SIZE - 1; i >= 0; i--) {
+					int32_t q_value = (int32_t) *(nn_output_u8 + i);
+					*(nn_output_f32 + i) = scale * (q_value - zero_point);
+				}
+				break;
 
-			scale = ai_get_output_scale();
-			zero_point = ai_get_output_zero_point();
+			case AI_SINT_Q:
+				scale = ai_get_output_scale();
+				zero_point = ai_get_output_zero_point();
 
-			/* Dequantize NN output - in-place 8-bit to float conversion */
-			nn_output_u8 = (ai_u8 *) data_out_1;
-			nn_output_f32 = (float *) data_out_1;
-			for(int32_t i = AI_NETWORK_OUT_1_SIZE - 1; i >= 0; i--)
-			{
-				int32_t q_value = (int32_t) *(nn_output_u8 + i);
-				*(nn_output_f32 + i) = scale * (q_value - zero_point);
-			}
-			break;
+				// in-place 8-bit to float conversion
+				nn_output_i8 = (ai_i8 *) data_out_1;
+				nn_output_f32 = (float *) data_out_1;
+				for(int32_t i = AI_NETWORK_OUT_1_SIZE - 1; i >= 0; i--) {
+					int32_t q_value = (int32_t) *(nn_output_i8 + i);
+					*(nn_output_f32 + i) = scale * (q_value - zero_point);
+				}
+				break;
 
-		case AI_SINT_Q:
-
-			scale = ai_get_output_scale();
-			zero_point = ai_get_output_zero_point();
-
-			/* Dequantize NN output - in-place 8-bit to float conversion */
-			nn_output_i8 = (ai_i8 *) data_out_1;
-			nn_output_f32 = (float *) data_out_1;
-			for(int32_t i = AI_NETWORK_OUT_1_SIZE - 1; i >= 0; i--)
-			{
-				int32_t q_value = (int32_t) *(nn_output_i8 + i);
-				*(nn_output_f32 + i) = scale * (q_value - zero_point);
-			}
-			break;
-
-		default:
-			break;
+			default:
+				break;
 		}
 	}
 }
 
 
-void ai_process_requirements(void) {
-	#if VERBOSE_LEVEL == 2
-		printf("[%s:%d] requirements - copy the resized image array onto the nn image buffer \r\n", __FILE__, __LINE__);
-	#elif VERBOSE_LEVEL == 1
-		printf("ai requirements process phase \r\n");
-	#endif
-
-	// copy the array content [resize_image_buffr] onto the image buffer [image_input_buffer]
-	// image_input_buffer = (uint8_t*)malloc(sizeof(uint8_t) * bufferBytes);
-	// image_input_buffer = (uint8_t*)calloc(bufferBytes, sizeof(uint8_t));
-	//	for(uint32_t i = 0; i < bufferBytes; i++)
-	//	{
-	//		*((uint8_t *)(image_input_buffer + i)) = image_buffer[i];
-	//	}
-}
-
-
-void ai_process_preproc() {
+void ai_process_preprocess() {
 	//	#if VERBOSE_LEVEL == 2
-	//		printf("[%s:%d] preprocessing pt.1 - swap R&B channels and convert the bpp if needed \r\n", __FILE__, __LINE__);
+	//		printf("[%s:%d] ai pre-processing - PFC and R&B Channels Swap \r\n", __FILE__, __LINE__);
 	//	#elif VERBOSE_LEVEL == 1
-	//		printf("ai preprocessing pt.1 \r\n");
+	//		printf("ai pre-processing: PFC and R&B Swap \r\n");
 	//	#endif
 
-	// pre-process the input buffer and copy in onto a new one
-	// image_preproc_buffer = (uint8_t*)malloc(sizeof(uint8_t) * bufferBytes);
-	// Image_Buffer_Pre_Processing(image_input_buffer, image_preproc_buffer);
-	// Image_Buffer_Pre_Processing((uint8_t *)image_buffer, image_preproc_buffer);
+	// pre-process the input buffer and copy it into a new one
+	// uint8_t *image_buffer_preproccesed = (uint8_t*)malloc(sizeof(uint8_t) * bufferBytes);
+	// PreProces_InputBuffer((uint8_t *)image_buffer_resized, image_buffer_preproccesed);
 
 	#if VERBOSE_LEVEL == 2
-		printf("[%s:%d] preprocessing pt.2 - PVC for quantized neural network\r\n", __FILE__, __LINE__);
+		printf("[%s:%d] ai pre-processing - Pixel Value Conversion \r\n", __FILE__, __LINE__);
 	#elif VERBOSE_LEVEL == 1
-		printf("ai preprocessing pt.2 \r\n");
+		printf("ai pre-processing: PVC \r\n");
 	#endif
 
-	// quantized neural network
-	if(ai_get_input_format() == AI_BUFFER_FMT_TYPE_Q) {
-		// AI_PixelValueConversion_QuantizedNN(image_input_buffer);
-		// AI_PixelValueConversion_QuantizedNN(image_preproc_buffer);
-		// AI_PixelValueConversion_QuantizedNN((uint8_t *)image_buffer);
-		AI_PixelValueConversion_QuantizedNN((uint8_t *)image_buffer_resized);
-	}
+	// Pixel Value Conversion for quantized or float neural networks
+	AI_PixelValueConversion((void *)image_buffer_resized);
 }
 
 
@@ -617,21 +628,21 @@ void ai_process_inference(void) {
 }
 
 
-void ai_process_postproc(void) {
+void ai_process_postprocess(void) {
 	// NN ouput dequantization if required
 	#if VERBOSE_LEVEL == 2
-		printf("[%s:%d] postprocessing pt.1 - dequantize neural network's output \r\n", __FILE__, __LINE__);
+		printf("[%s:%d] post-processing - dequantize neural network's output \r\n", __FILE__, __LINE__);
 	#elif VERBOSE_LEVEL == 1
-		printf("ai postprocessing pt.1 \r\n");
+		printf("ai post-processing: dequantize output \r\n");
 	#endif
 
 	AI_Output_Dequantize();
 
 	// perform ranking
 	#if VERBOSE_LEVEL == 2
-		printf("[%s:%d] postprocessing pt.2 - perform ranking with bubblesort \r\n", __FILE__, __LINE__);
+		printf("[%s:%d] post-processing - perform ranking with bubblesort \r\n", __FILE__, __LINE__);
 	#elif VERBOSE_LEVEL == 1
-		printf("ai postprocessing pt.2 \r\n");
+		printf("ai post-processing: bubblesort \r\n");
 	#endif
 
 	// setup the ranking array for the ai classes
@@ -707,19 +718,24 @@ void MX_X_CUBE_AI_Init(void)
 		printf("ai get report error\r\n");
 	}
 
-	// printf("Model name : %s\r\n", report.model_name);
-	// printf("Model signature : %s\r\n", report.model_signature);
+	#if VERBOSE_LEVEL == 2
+		printf("[%s:%d] NN model name : %s\r\n", __FILE__, __LINE__, report.model_name);
+		printf("[%s:%d] NN model signature : %s\r\n", __FILE__, __LINE__, report.model_signature);
 
-	// ai_input = &report.inputs[0];
-	// ai_output = &report.outputs[0];
-	// printf("input[0] : (%lu, %lu, %lu)\r\n", AI_BUFFER_SHAPE_ELEM(ai_input, AI_SHAPE_HEIGHT),
-	//										    AI_BUFFER_SHAPE_ELEM(ai_input, AI_SHAPE_WIDTH),
-	//										    AI_BUFFER_SHAPE_ELEM(ai_input, AI_SHAPE_CHANNEL));
-	// printf("output[0] : (%lu, %lu, %lu)\r\n", AI_BUFFER_SHAPE_ELEM(ai_output, AI_SHAPE_HEIGHT),
-	//										     AI_BUFFER_SHAPE_ELEM(ai_output, AI_SHAPE_WIDTH),
-	//										     AI_BUFFER_SHAPE_ELEM(ai_output, AI_SHAPE_CHANNEL));
+		// get the reports
+		ai_input = &report.inputs[0];
+		ai_output = &report.outputs[0];
+		printf("[%s:%d] input[0] : (%lu, %lu, %lu)\r\n", __FILE__, __LINE__,
+														 AI_BUFFER_SHAPE_ELEM(ai_input, AI_SHAPE_HEIGHT),
+														 AI_BUFFER_SHAPE_ELEM(ai_input, AI_SHAPE_WIDTH),
+														 AI_BUFFER_SHAPE_ELEM(ai_input, AI_SHAPE_CHANNEL));
+		printf("[%s:%d] output[0] : (%lu, %lu, %lu)\r\n", __FILE__, __LINE__,
+														  AI_BUFFER_SHAPE_ELEM(ai_output, AI_SHAPE_HEIGHT),
+														  AI_BUFFER_SHAPE_ELEM(ai_output, AI_SHAPE_WIDTH),
+														  AI_BUFFER_SHAPE_ELEM(ai_output, AI_SHAPE_CHANNEL));
+	#endif
 
-	// requirements
+	// compute the pixel conversion look up table
 	Compute_pix_conv_tab();
 
     /* USER CODE END 5 */
@@ -729,17 +745,14 @@ void MX_X_CUBE_AI_Process(void)
 {
     /* USER CODE BEGIN 6 */
 
-	/* ------------------- REQUIREMENTS -------------------- */
-	// ai_process_requirements();
-
 	/* ------------------ PRE-PROCESSING ------------------- */
-	ai_process_preproc();
+	ai_process_preprocess();
 
 	/* -------------------- INFERENCE ---------------------- */
 	ai_process_inference();
 
 	/* ------------------ POST-PROCESSING ------------------ */
-	ai_process_postproc();
+	ai_process_postprocess();
 
 	/* ----------------- INFERENCE RESULTS ----------------- */
 	ai_process_display();
