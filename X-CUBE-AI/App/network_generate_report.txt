@@ -1,16 +1,16 @@
 Neural Network Tools for STM32AI v1.6.0 (STM.ai v7.1.0-RC3)
-Created date          : 2022-08-01 22:36:40
-Parameters            : generate --name network -m /Users/edoardo/STM32CubeIDE/workspace_1.10.1/stm32f429-ai-teachablemachine/Model/model_aew.tflite --type tflite --compression 1 --verbosity 1 --workspace /var/folders/48/l0spqxpd4fb53zl2tk8w7hq00000gn/T/mxAI_workspace4579410140640110940249756628481669 --output /Users/edoardo/.stm32cubemx/network_output
+Created date          : 2022-08-03 15:08:54
+Parameters            : generate --name network -m /Users/edoardo/STM32CubeIDE/workspace_1.10.1/stm32f4-ai-framework/Model/model_aew.tflite --type tflite --compression 1 --verbosity 1 --workspace /var/folders/48/l0spqxpd4fb53zl2tk8w7hq00000gn/T/mxAI_workspace6343799142133265107595476358408 --output /Users/edoardo/.stm32cubemx/network_output
 
 Exec/report summary (generate)
 ------------------------------------------------------------------------------------------------------------------------
-model file            : /Users/edoardo/STM32CubeIDE/workspace_1.10.1/stm32f429-ai-teachablemachine/Model/model_aew.tflite
+model file            : /Users/edoardo/STM32CubeIDE/workspace_1.10.1/stm32f4-ai-framework/Model/model_aew.tflite
 type                  : tflite
 c_name                : network
 compression           : None
 allocator strategy    : ['multi-heaps']
-target info           : /private/var/folders/48/l0spqxpd4fb53zl2tk8w7hq00000gn/T/mxAI_workspace4579410140640110940249756628481669/mempools.json
-workspace dir         : /private/var/folders/48/l0spqxpd4fb53zl2tk8w7hq00000gn/T/mxAI_workspace4579410140640110940249756628481669
+target info           : /private/var/folders/48/l0spqxpd4fb53zl2tk8w7hq00000gn/T/mxAI_workspace6343799142133265107595476358408/mempools.json
+workspace dir         : /private/var/folders/48/l0spqxpd4fb53zl2tk8w7hq00000gn/T/mxAI_workspace6343799142133265107595476358408
 output dir            : /Users/edoardo/.stm32cubemx/network_output
 model_name            : model_aew
 model_hash            : 9be4ecad21c4d202e6f0c3510d82bdb2
@@ -25,11 +25,11 @@ activations (rw)      : 610,784 B (596.47 KiB) (1 segment)
 ram (total)           : 761,315 B (743.47 KiB) = 610,784 + 150,528 + 3
 
 Memory-pools summary (activations/ domain)
-------------------------------------------------------
-name   id   usable size   used                buffer#
-------------------------------------------------------
-pool   0    8.00 MiB      596.47 KiB (7.3%)   155    
-------------------------------------------------------
+-------------------------------------------------------
+name   id   usable size   used                 buffer#
+-------------------------------------------------------
+pool   0    4.00 MiB      596.47 KiB (14.6%)   155    
+-------------------------------------------------------
 
 Model name - model_aew ['serving_default_sequential_1_input0'] ['conversion_72']
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
