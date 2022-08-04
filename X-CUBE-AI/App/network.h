@@ -4,7 +4,7 @@
   ******************************************************************************
   * @file    network.h
   * @author  AST Embedded Analytics Research Platform
-  * @date    Wed Aug  3 16:49:59 2022
+  * @date    Thu Aug  4 12:19:42 2022
   * @brief   AI Tool Automatic Code Generator for Embedded NN computing
   ******************************************************************************
   * @attention
@@ -27,7 +27,7 @@
 
 /******************************************************************************/
 #define AI_NETWORK_MODEL_NAME          "network"
-#define AI_NETWORK_ORIGIN_MODEL_NAME   "foodreco_mobilenet_derivative_quantized"
+#define AI_NETWORK_ORIGIN_MODEL_NAME   "mobv2_128x128x3"
 
 /******************************************************************************/
 #define AI_NETWORK_ACTIVATIONS_ALIGNMENT   (4)
@@ -47,11 +47,11 @@ AI_DEPRECATED
 #define AI_NETWORK_IN_SIZE_BYTES { \
   AI_NETWORK_IN_1_SIZE_BYTES, \
 }
-#define AI_NETWORK_IN_1_HEIGHT      (224)
-#define AI_NETWORK_IN_1_WIDTH       (224)
+#define AI_NETWORK_IN_1_HEIGHT      (128)
+#define AI_NETWORK_IN_1_WIDTH       (128)
 #define AI_NETWORK_IN_1_CHANNEL     (3)
-#define AI_NETWORK_IN_1_SIZE        (224 * 224 * 3)
-#define AI_NETWORK_IN_1_SIZE_BYTES  (150529)
+#define AI_NETWORK_IN_1_SIZE        (128 * 128 * 3)
+#define AI_NETWORK_IN_1_SIZE_BYTES  (49152)
 
 /******************************************************************************/
 #define AI_NETWORK_OUT_NUM       (1)
@@ -66,14 +66,12 @@ AI_DEPRECATED
 #define AI_NETWORK_OUT_SIZE_BYTES { \
   AI_NETWORK_OUT_1_SIZE_BYTES, \
 }
-#define AI_NETWORK_OUT_1_HEIGHT      (1)
-#define AI_NETWORK_OUT_1_WIDTH       (1)
-#define AI_NETWORK_OUT_1_CHANNEL     (18)
-#define AI_NETWORK_OUT_1_SIZE        (1 * 1 * 18)
-#define AI_NETWORK_OUT_1_SIZE_BYTES  (72)
+#define AI_NETWORK_OUT_1_CHANNEL     (2)
+#define AI_NETWORK_OUT_1_SIZE        (2)
+#define AI_NETWORK_OUT_1_SIZE_BYTES  (2)
 
 /******************************************************************************/
-#define AI_NETWORK_N_NODES (26)
+#define AI_NETWORK_N_NODES (67)
 
 
 AI_API_DECLARE_BEGIN

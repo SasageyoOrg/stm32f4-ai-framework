@@ -210,7 +210,7 @@ static int ai_run(void)
 		return -1;
 	}
 
-	return 0;
+  return 0;
 }
 
 /* USER CODE BEGIN 2 */
@@ -593,17 +593,19 @@ void AI_Output_Dequantize(void)
 
 
 void ai_process_preprocess() {
-	#if VERBOSE_LEVEL == 2
-		printf("[%s:%d] ai pre-processing - PFC and R&B Channels Swap \r\n", __FILE__, __LINE__);
-	#elif VERBOSE_LEVEL == 1
-		printf("ai pre-processing: PFC and R&B Swap \r\n");
-	#endif
+	if(AI_RB_SWAP) {
+		#if VERBOSE_LEVEL == 2
+			printf("[%s:%d] ai pre-processing - PFC and R&B Channels Swap \r\n", __FILE__, __LINE__);
+		#elif VERBOSE_LEVEL == 1
+			printf("ai pre-processing: PFC and R&B Swap \r\n");
+		#endif
 
-	// pre-process the input buffer and copy it into a new one
-	// uint8_t *image_buffer_preproc = (uint8_t*)malloc(sizeof(uint8_t) * IMGBUFFERSIZE);
-	// AI_RBswap_PixelFormatConversion((uint8_t *)image_buffer_resized, image_buffer_preproc);
+		// pre-process the input buffer and copy it into a new one
+		// uint8_t *image_buffer_preproc = (uint8_t*)malloc(sizeof(uint8_t) * IMGBUFFERSIZE);
+		// AI_RBswap_PixelFormatConversion((uint8_t *)image_buffer_resized, image_buffer_preproc);
 
-	PREPROC_Pixel_RB_Swap_InPlace((void *)image_buffer_resized);
+		PREPROC_Pixel_RB_Swap_InPlace((void *)image_buffer_resized);
+	}
 
 	#if VERBOSE_LEVEL == 2
 		printf("[%s:%d] ai pre-processing - Pixel Value Conversion \r\n", __FILE__, __LINE__);
