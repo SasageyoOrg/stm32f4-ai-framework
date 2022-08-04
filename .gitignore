@@ -51,13 +51,15 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-.DS_Store
-.project
-.mxproject
-.cproject
 
-.ai/*
-.settings/*
+# Hidden files
+#.project
+#.mxproject
+#.cproject
+.DS_Store
 *.launch
 
+# Hidden directories
+#.settings/*
+.ai/*
 Debug/*
