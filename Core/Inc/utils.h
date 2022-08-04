@@ -49,6 +49,8 @@ typedef struct RGB
 #define AI_CLASSES			{"EDO", "ALBERO", "WC"}
 #define AI_IN_NORM_SCALE	127.5f
 #define AI_IN_NORM_ZP		127
+#define AI_RB_SWAP			0
+#define AI_TOP_N_RESULTS	3
 // absolute address of the folder on the USB drive where the images are located
 #define PATH_TO_JPEGS		"/teachable"
 // verbose option : [0-2] (the higher the value, the more info will be printed )

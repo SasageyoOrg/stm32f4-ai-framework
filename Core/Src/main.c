@@ -150,6 +150,7 @@ int main(void)
 	// now i can write on it
 	BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t*)"STM32 AI Framework", CENTER_MODE);
 	BSP_LCD_DisplayStringAt(0, LINE(2), (uint8_t*)"SOD@UNIVPM 2022", CENTER_MODE);
+	BSP_LCD_DisplayStringAt(0, LINE(4), (uint8_t*)"TEACHABLE MACHINE", CENTER_MODE);
 
 	HAL_Delay(2000);
 	BSP_LCD_Clear(LCD_COLOR_BLACK);
