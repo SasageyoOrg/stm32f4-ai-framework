@@ -22,13 +22,12 @@
 #include "main.h"
 #include "fatfs.h"
 #include "libjpeg.h"
-//#include "app_x-cube-ai.h"
 #include "usb_host.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "utils.h"
-
+#include <stdarg.h>
 #include "edge-impulse-sdk/classifier/ei_run_classifier.h"
 
 using namespace ei;
@@ -75,9 +74,6 @@ uint8_t *scanline_buffer;
 uint8_t *image_buffer;
 __attribute__((section(".extram"))) uint8_t image_buffer_resized[IMGBUFFERSIZE];
 
-// wip
-__attribute__((section(".extram"))) uint16_t image_buffer_rgb565[IMAGE_HEIGHT*IMAGE_WIDTH];
-
 // counter increased every time an image is decoded and processed
 int imgs_processed = 0;
 /* USER CODE END PV */
@@ -103,15 +99,11 @@ void Scan_JPGs(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#include <stdarg.h>
-#include "edge-impulse-sdk/classifier/ei_run_classifier.h"
-
 void vprint(const char *fmt, va_list argp)
 {
     char string[200];
     if(0 < vsprintf(string, fmt, argp)) // build string
     {
-        //HAL_UART_Transmit(&huart1, (uint8_t*)string, strlen(string), 0xffffff); // send message via UART
         HAL_UART_Transmit(&huart1, (uint8_t*)string, strlen(string), 1000); // send message via UART
     }
 }
@@ -616,12 +608,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-//int _write(int file, char *ptr, int len){
-//	HAL_UART_Transmit(&huart1,(uint8_t*)ptr,len,1000);
-//
-//	return len;
-//}
-
 
 static void LCD_Config(void)
 {
@@ -667,27 +653,6 @@ void DMA2D_BufferImage2LCD(uint32_t data, uint32_t x, uint32_t y, uint32_t width
 }
 
 
-void DMA2D_RGB565_LCD(uint32_t data, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
-{
-	/*
-	 * ensure to have configured the DMA2D with this settings
-	 * - DMA2D_M2M_PFC : pixel format conversion
-	 * the image buffer is stored as RGB888 (= 24bit, uint8_t for each channel)
-	 * but the display is configured as ARGB8888 (= 32bit, uint32_t for each pixel)
-	 * - MA2D_M2M : if InputColorMode == ColorMode (ARGB8888) but a previous conversion is required
-	 * it consists of converting the image buffer to a ARGB32Buffer to store the image in 32bit
-	 */
-	hdma2d.Init.ColorMode = DMA2D_OUTPUT_ARGB8888;
-	hdma2d.LayerCfg[1].InputColorMode = DMA2D_INPUT_RGB565;
-	hdma2d.Init.OutputOffset = BSP_LCD_GetXSize() - width;
-
-	HAL_DMA2D_Init(&hdma2d);
-	HAL_DMA2D_ConfigLayer(&hdma2d, 1);
-	HAL_DMA2D_Start(&hdma2d, data, LCD_BUFFER + (x + y * BSP_LCD_GetXSize()) * 4, width, height);
-	HAL_DMA2D_PollForTransfer(&hdma2d, 10);
-}
-
-
 /**
  * @brief      Convert RGB565 raw camera buffer to RGB888
  *
@@ -696,32 +661,6 @@ void DMA2D_RGB565_LCD(uint32_t data, uint32_t x, uint32_t y, uint32_t width, uin
  * @param[out]  out_buf      pointer to store output image
  */
 int ei_buffer_get_data(size_t offset, size_t length, float *out_ptr) {
-//	size_t pixel_ix = offset * 2;
-//	size_t bytes_left = length;
-//	size_t out_ptr_ix = 0;
-//
-//	// read byte for byte
-//	while (bytes_left != 0) {
-//		// grab the value and convert to r/g/b
-//		uint16_t pixel = (image_buffer_rgb565[pixel_ix] << 8) | image_buffer_rgb565[pixel_ix+1];
-//		uint8_t r, g, b;
-//		r = ((pixel >> 11) & 0x1f) << 3;
-//		g = ((pixel >> 5) & 0x3f) << 2;
-//		b = (pixel & 0x1f) << 3;
-//
-//		// then convert to out_ptr format
-//		float pixel_f = (r << 16) + (g << 8) + b;
-//		out_ptr[out_ptr_ix] = pixel_f;
-//
-//		// and go to the next pixel
-//		out_ptr_ix++;
-//		pixel_ix+=2;
-//		bytes_left--;
-//	}
-//
-//	// and done!
-//	return 0;
-
 	size_t pixel_ix = offset * 3;
 	size_t bytes_left = length;
 	size_t out_ptr_ix = 0;
@@ -746,28 +685,6 @@ int ei_buffer_get_data(size_t offset, size_t length, float *out_ptr) {
 	// and done!
 	return 0;
 }
-
-
-void convertBuffers() {
-	uint8_t r, g, b;
-	uint16_t red, green, blue;
-
-	for(int i = 0; i < IMAGE_HEIGHT * IMAGE_WIDTH; i++) {
-		// R&B swap
-		r = image_buffer_resized[i * 3];
-		g = image_buffer_resized[i * 3 + 1];
-		b = image_buffer_resized[i * 3 + 2];
-
-		blue = (b >> 3) & 0x1f;
-		green = ((g >> 2) & 0x3f) << 5;
-		red = ((r >> 3) & 0x1f) << 11;
-
-		// then convert to out_ptr format
-		image_buffer_rgb565[i] = (uint16_t) (red | green | blue);
-	}
-
-}
-
 
 void Scan_JPGs(void){
 	// needed for manage the USB host's file system
@@ -813,17 +730,8 @@ void Scan_JPGs(void){
 					IMAGE_HEIGHT
 				);
 
-				// convert RGB888 to RGB565
-				// convertBuffers();
-
-//				DMA2D_RGB565_LCD(
-//					(uint32_t)image_buffer_rgb565,
-//					0, //(BSP_LCD_GetXSize() - IMAGE_WIDTH) / 2,
-//					0, //(BSP_LCD_GetXSize() - IMAGE_HEIGHT) / 2,
-//					IMAGE_WIDTH,
-//					IMAGE_HEIGHT
-//				);
-
+				// timing variables
+				int wline = 13;
 
 				// Edge Impulse AI
 				ei::signal_t signal;
@@ -832,6 +740,7 @@ void Scan_JPGs(void){
 
 				// run the impulse: DSP, neural network and the Anomaly algorithm
 				ei_impulse_result_t result = { 0 };
+
 
 				EI_IMPULSE_ERROR ei_error = run_classifier(&signal, &result, false);
 				if (ei_error != EI_IMPULSE_OK) {
@@ -843,53 +752,81 @@ void Scan_JPGs(void){
 				ei_printf("Predictions (DSP: %d ms., Classification: %d ms., Anomaly: %d ms.): \r\n",
 						result.timing.dsp, result.timing.classification, result.timing.anomaly);
 
+				// change font size
 				BSP_LCD_SetFont(&Font12);
-
-				char msg[20];
-
+				// string for the label and confidence score
+				char msg[60];
+				// number of objects detected
+				int nb_screws = 0;
+				int nb_washers = 0;
+				// check if the neural network detected at least 1 object
 				bool bb_found = result.bounding_boxes[0].value > 0;
-				for (size_t ix = 0; ix < result.bounding_boxes_count; ix++) {
-					auto bb = result.bounding_boxes[ix];
-					if (bb.value == 0) {
-						continue;
+
+				if (bb_found) {
+					for (size_t ix = 0; ix < result.bounding_boxes_count; ix++) {
+						auto bb = result.bounding_boxes[ix];
+						if (bb.value == 0) {
+							continue;
+						}
+
+						ei_printf("\t%s (%f) [ x: %lu, y: %lu, width: %lu, height: %lu ]\r\n", bb.label, bb.value, bb.x, bb.y, bb.width, bb.height);
+
+						// adjust coordinates because the image is printed in the (width)center of LCD
+						uint32_t x_norm = ((BSP_LCD_GetXSize() - IMAGE_WIDTH) / 2) + bb.x;
+						uint32_t y_norm = ((BSP_LCD_GetXSize() - IMAGE_HEIGHT) / 2) + bb.y;
+
+						// set colors based on the label
+						if(!strcmp(bb.label, ei_classifier_inferencing_categories[0])) {
+							// screw
+							BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
+							nb_screws++;
+						} else {
+							BSP_LCD_SetTextColor(LCD_COLOR_RED);
+							nb_washers++;
+						}
+
+						// draw a circle in the detected coords on LCD
+						BSP_LCD_DrawCircle(x_norm, y_norm, bb.width);
+
+						// write label and confidence
+						if(EI_PRINT_LABELS) {
+							sprintf(msg, "%s (%.2f)", bb.label, bb.value);
+							BSP_LCD_DisplayStringAt(x_norm, y_norm + bb.width, (uint8_t*)msg, LEFT_MODE);
+						}
 					}
-
-					ei_printf("    %s (%f) [ x: %lu, y: %lu, width: %lu, height: %lu ]\r\n", bb.label, bb.value, bb.x, bb.y, bb.width, bb.height);
-
-					uint32_t x_norm = ((BSP_LCD_GetXSize() - IMAGE_WIDTH) / 2) + bb.x;
-					uint32_t y_norm = ((BSP_LCD_GetXSize() - IMAGE_HEIGHT) / 2) + bb.y;
-
-					// set colors
-					if(!strcmp(bb.label, ei_classifier_inferencing_categories[0])) {
-						// screw
-						BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
-					} else {
-						BSP_LCD_SetTextColor(LCD_COLOR_RED);
-					}
-
-					// draw circle on LCD
-					BSP_LCD_DrawCircle(x_norm, y_norm, bb.width);
-
-					// write label and confidence
-					if(EI_PRINT_LABELS) {
-						sprintf(msg, "%s (%.2f)", bb.label, bb.value);
-						BSP_LCD_DisplayStringAt(x_norm, y_norm + bb.width, (uint8_t*)msg, LEFT_MODE);
-					}
-
+				} else {
+					ei_printf("\tNo objects found\r\n");
 				}
 
-				if (!bb_found) {
-					ei_printf("    No objects found\r\n");
+				BSP_LCD_SetFont(&Font16);
+				BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+
+				sprintf(msg, "Inference results");
+				BSP_LCD_DisplayStringAtLine(wline++, (uint8_t*)msg);
+
+				sprintf(msg, "%d objects detected", nb_screws + nb_washers);
+				BSP_LCD_DisplayStringAtLine(wline++, (uint8_t*)msg);
+
+				if(nb_screws > 0) {
+					sprintf(msg, "- %d %s", nb_screws, ei_classifier_inferencing_categories[0]);
+					BSP_LCD_DisplayStringAtLine(wline++, (uint8_t*)msg);
 				}
 
-				// AI process
-				// MX_X_CUBE_AI_Process();
+				if(nb_washers > 0) {
+					sprintf(msg, "- %d %s", nb_washers, ei_classifier_inferencing_categories[1]);
+					BSP_LCD_DisplayStringAtLine(wline++, (uint8_t*)msg);
+				}
+
+				wline++;
+				sprintf(msg, "Inference time");
+				BSP_LCD_DisplayStringAtLine(wline++, (uint8_t*)msg);
+
+				sprintf(msg, "%dms", result.timing.classification);
+				BSP_LCD_DisplayStringAtLine(wline, (uint8_t*)msg);
 
 				// wait 4s to read the neural network results
-				HAL_Delay(2000);
+				HAL_Delay(4000);
 
-				// clear the last AI results (todo: indices hard-coded)
-				// for (int k = 10; k < 17; k++) BSP_LCD_ClearStringLine(k);
 				BSP_LCD_Clear(LCD_COLOR_BLACK);
 			}
 

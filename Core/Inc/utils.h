@@ -45,18 +45,11 @@ typedef struct RGB
 #define IMAGE_BPP			3
 // dimension in bytes of the image's buffer (WIDTH x HEIGHT x RGB_888_BPP)
 #define IMGBUFFERSIZE		IMAGE_WIDTH * IMAGE_HEIGHT * IMAGE_BPP
-// AI parameters
-#define AI_CLASSES			{"EDO", "ALBERO", "WC"}
-#define AI_IN_NORM_SCALE	127.5f
-#define AI_IN_NORM_ZP		127
-#define AI_RB_SWAP			0
-#define AI_TOP_N_RESULTS	3
 // absolute address of the folder on the USB drive where the images are located
 #define PATH_TO_JPEGS		"/screwashers"
 // verbose option : [0-2] (the higher the value, the more info will be printed )
 #define VERBOSE_LEVEL		1
-
-// wip
+// edge impulse custom settings
 #define EI_PRINT_LABELS		1
 
 
@@ -68,11 +61,7 @@ extern uint8_t *scanline_buffer;
 extern uint8_t *image_buffer;
 extern __attribute__((section(".extram"))) uint8_t image_buffer_resized[IMGBUFFERSIZE];
 
-// wip
-extern __attribute__((section(".extram"))) uint16_t image_buffer_rgb565[IMAGE_HEIGHT*IMAGE_WIDTH];
-
 /* Function prototypes -----------------------------------------------------------------*/
 void UTILS_ResizeBuffer(const uint8_t* input, uint8_t* output, int srcW, int srcH, int dstW, int dstH);
-void UTILS_Bubblesort(float *prob, int *classes, int size);
 
 #endif /* __utils_H */
