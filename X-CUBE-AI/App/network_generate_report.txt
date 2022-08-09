@@ -1,6 +1,6 @@
 Neural Network Tools for STM32AI v1.6.0 (STM.ai v7.1.0-RC3)
-Created date          : 2022-08-03 15:50:08
-Parameters            : generate --name network -m /Users/edoardo/STM32CubeIDE/workspace_1.10.1/stm32f4-ai-framework/Model/teachablemachine.tflite --type tflite --compression 1 --verbosity 1 --workspace /var/folders/48/l0spqxpd4fb53zl2tk8w7hq00000gn/T/mxAI_workspace3109683642124989537797484061834 --output /Users/edoardo/.stm32cubemx/network_output
+Created date          : 2022-08-09 11:48:29
+Parameters            : generate --name network -m /Users/edoardo/STM32CubeIDE/workspace_1.10.1/stm32f4-ai-framework/Model/teachablemachine.tflite --type tflite --compression 1 --verbosity 1 --workspace /var/folders/48/l0spqxpd4fb53zl2tk8w7hq00000gn/T/mxAI_workspace87296208216277512479537926819131 --output /Users/edoardo/.stm32cubemx/network_output
 
 Exec/report summary (generate)
 ------------------------------------------------------------------------------------------------------------------------
@@ -9,8 +9,8 @@ type                  : tflite
 c_name                : network
 compression           : None
 allocator strategy    : ['multi-heaps']
-target info           : /private/var/folders/48/l0spqxpd4fb53zl2tk8w7hq00000gn/T/mxAI_workspace3109683642124989537797484061834/mempools.json
-workspace dir         : /private/var/folders/48/l0spqxpd4fb53zl2tk8w7hq00000gn/T/mxAI_workspace3109683642124989537797484061834
+target info           : /private/var/folders/48/l0spqxpd4fb53zl2tk8w7hq00000gn/T/mxAI_workspace87296208216277512479537926819131/mempools.json
+workspace dir         : /private/var/folders/48/l0spqxpd4fb53zl2tk8w7hq00000gn/T/mxAI_workspace87296208216277512479537926819131
 output dir            : /Users/edoardo/.stm32cubemx/network_output
 model_name            : teachablemachine
 model_hash            : 9be4ecad21c4d202e6f0c3510d82bdb2
