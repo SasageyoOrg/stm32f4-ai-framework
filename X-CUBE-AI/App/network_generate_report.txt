@@ -1,19 +1,19 @@
 Neural Network Tools for STM32AI v1.6.0 (STM.ai v7.1.0-RC3)
-Created date          : 2022-08-03 15:50:08
-Parameters            : generate --name network -m /Users/edoardo/STM32CubeIDE/workspace_1.10.1/stm32f4-ai-framework/Model/teachablemachine.tflite --type tflite --compression 1 --verbosity 1 --workspace /var/folders/48/l0spqxpd4fb53zl2tk8w7hq00000gn/T/mxAI_workspace3109683642124989537797484061834 --output /Users/edoardo/.stm32cubemx/network_output
+Created date          : 2022-10-10 18:46:00
+Parameters            : generate --name network -m /Users/sasageyo/STM32CubeIDE/workspace_1.10.1/stm32f4-ai-framework/Model/teachablemachine_ela.tflite --type tflite --compression 1 --verbosity 1 --workspace /var/folders/12/f7vlx42576937lf1nplww4jh0000gq/T/mxAI_workspace874518170933712127869951187421266 --output /Users/sasageyo/.stm32cubemx/network_output
 
 Exec/report summary (generate)
 ------------------------------------------------------------------------------------------------------------------------
-model file            : /Users/edoardo/STM32CubeIDE/workspace_1.10.1/stm32f4-ai-framework/Model/teachablemachine.tflite
+model file            : /Users/sasageyo/STM32CubeIDE/workspace_1.10.1/stm32f4-ai-framework/Model/teachablemachine_ela.tflite
 type                  : tflite
 c_name                : network
 compression           : None
 allocator strategy    : ['multi-heaps']
-target info           : /private/var/folders/48/l0spqxpd4fb53zl2tk8w7hq00000gn/T/mxAI_workspace3109683642124989537797484061834/mempools.json
-workspace dir         : /private/var/folders/48/l0spqxpd4fb53zl2tk8w7hq00000gn/T/mxAI_workspace3109683642124989537797484061834
-output dir            : /Users/edoardo/.stm32cubemx/network_output
-model_name            : teachablemachine
-model_hash            : 9be4ecad21c4d202e6f0c3510d82bdb2
+target info           : /private/var/folders/12/f7vlx42576937lf1nplww4jh0000gq/T/mxAI_workspace874518170933712127869951187421266/mempools.json
+workspace dir         : /private/var/folders/12/f7vlx42576937lf1nplww4jh0000gq/T/mxAI_workspace874518170933712127869951187421266
+output dir            : /Users/sasageyo/.stm32cubemx/network_output
+model_name            : teachablemachine_ela
+model_hash            : 0006e8fb0b252439875c33f16a7df6e4
 input 1/1             : 'serving_default_sequential_1_input0'
                         150528 items, 147.00 KiB, ai_u8, scale=0.00784314, zero_point=127, (1,224,224,3), domain:user/
 output 1/1            : 'nl_71_0_conversion'
@@ -31,7 +31,7 @@ name   id   usable size   used                 buffer#
 pool   0    4.00 MiB      596.47 KiB (14.6%)   155    
 -------------------------------------------------------
 
-Model name - teachablemachine ['serving_default_sequential_1_input0'] ['conversion_72']
+Model name - teachablemachine_ela ['serving_default_sequential_1_input0'] ['conversion_72']
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 id   layer (type)                                  oshape           param/size        macc        connected to                          |   c_size       c_macc              c_type                 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -235,7 +235,7 @@ model/c-model: macc=61,210,759/58,587,404 -2,623,355(-4.3%) weights=538,908/538,
 
 Generated C-graph summary
 ------------------------------------------------------------------------------------------------------------------------
-model name            : teachablemachine
+model name            : teachablemachine_ela
 c-name                : network
 c-node #              : 68
 c-array #             : 265
@@ -1005,9 +1005,9 @@ id   name           c_macc                    c_rom                     c_id
 71   nl_71          |                  0.0%   |                  0.0%   [66, 67]
 
 Generated files (5)
----------------------------------------------------------------------
-/Users/edoardo/.stm32cubemx/network_output/network_config.h
-/Users/edoardo/.stm32cubemx/network_output/network.h
-/Users/edoardo/.stm32cubemx/network_output/network.c
-/Users/edoardo/.stm32cubemx/network_output/network_data.h
-/Users/edoardo/.stm32cubemx/network_output/network_data.c
+----------------------------------------------------------------------
+/Users/sasageyo/.stm32cubemx/network_output/network_config.h
+/Users/sasageyo/.stm32cubemx/network_output/network.h
+/Users/sasageyo/.stm32cubemx/network_output/network.c
+/Users/sasageyo/.stm32cubemx/network_output/network_data.h
+/Users/sasageyo/.stm32cubemx/network_output/network_data.c

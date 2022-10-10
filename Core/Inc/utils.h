@@ -46,7 +46,7 @@ typedef struct RGB
 // dimension in bytes of the image's buffer (WIDTH x HEIGHT x RGB_888_BPP)
 #define IMGBUFFERSIZE		IMAGE_WIDTH * IMAGE_HEIGHT * IMAGE_BPP
 // AI parameters
-#define AI_CLASSES			{"EDO", "ALBERO", "WC"}
+#define AI_CLASSES			{"EDOARDO", "LORENZO", "ANDRIAN"}
 #define AI_IN_NORM_SCALE	127.5f
 #define AI_IN_NORM_ZP		127
 #define AI_RB_SWAP			0
