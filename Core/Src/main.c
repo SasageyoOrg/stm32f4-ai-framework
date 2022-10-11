@@ -687,7 +687,7 @@ void Scan_JPGs(void){
 				MX_X_CUBE_AI_Process();
 
 				// wait 4s to read the neural network results
-				HAL_Delay(4000);
+				HAL_Delay(1000);
 
 				// clear the last AI results (todo: indices hard-coded)
 				// for (int k = 10; k < 17; k++) BSP_LCD_ClearStringLine(k);
